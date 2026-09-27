@@ -1,0 +1,16 @@
+<svg viewBox="0 0 1200 400" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="g1" x1="100%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#cc581a"/>
+      <stop offset="100%" stop-color="#7a2f0e"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="400" fill="url(#g1)"/>
+  <rect x="1182" y="0" width="18" height="400" fill="#00732f"/>
+  <rect x="1164" y="0" width="18" height="400" fill="#ffffff"/>
+  <rect x="1146" y="0" width="18" height="400" fill="#000000"/>
+  <text x="1100" y="160" font-family="Arial, sans-serif" font-size="52" font-weight="800" fill="#ffffff" text-anchor="end" direction="rtl">تخفيضات إطلاق الإمارات</text>
+  <text x="1100" y="225" font-family="Arial, sans-serif" font-size="30" font-weight="600" fill="#ffe8d9" text-anchor="end" direction="rtl">وفّر مع نون ونمشي والمزيد</text>
+  <rect x="870" y="270" width="230" height="60" rx="30" fill="#ffffff"/>
+  <text x="985" y="308" font-family="Arial, sans-serif" font-size="24" font-weight="700" fill="#a8461a" text-anchor="middle" direction="rtl">تسوّق الآن</text>
+</svg>

@@ -1,0 +1,334 @@
+/* Add the custom Styles here */
+.frontpage-before-main .widget_popular_stores .store-thumb{
+	box-shadow:0 10px 15px -3px rgba(0,0,0,0.1),0 4px 6px -4px rgba(0,0,0,0.1);
+    height: 85px;
+    background: #fff;
+	border:none;
+}
+
+.widget_popular_stores .grid .store-thumb:hover {
+    border: 1px solid #cc581a75;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.25), 0 4px 6px -4px rgba(0, 0, 0, 0.25);
+}
+
+/* All Stores (A-Z) per-letter grid: Semantic's "six column grid" gives each
+   .column a fixed 16.66% width, which is fine when a letter has 6+ stores
+   but leaves a large blank gap to the right when it has only 1-2 (exactly
+   what a country with few stores so far, like AE today, hits on every
+   letter). Letting columns flex-grow instead means a sparse row's items
+   stretch to fill the row, while a full row still wraps the same as
+   before (flex-basis keeps items ~140px+ wide either way). Scoped to this
+   specific listing only. */
+.store-icon-content .ui.six.column.grid > .column {
+    width: auto !important;
+    flex: 1 1 140px !important;
+    max-width: 220px;
+}
+
+/* Same page, one level up: the listing's own wrapper (".twelve wide") is
+   missing Semantic's required "column" class (a pre-existing template
+   markup issue in store-az.php, not new — India's page happens to hide it
+   because it has enough stores to fill the row anyway). Without ".column",
+   none of Semantic's grid-width rules apply, so the div is just a default
+   flex child that shrinks to fit its own content — full-width for a
+   content-heavy page, but only as wide as a handful of store cards for a
+   country that doesn't have many yet. It should always be full width. */
+.browse-store.stackable.ui.grid > .twelve.wide {
+    width: 100% !important;
+}
+
+/* Country switcher (header) — multi-country support, Step B.
+   Styled after grabon.in/grabonuae.ae's own switcher: a small pill with a
+   circular flag + code that opens a horizontal row of larger circular
+   flag badges (code below each), rather than a vertical list of full
+   country names. */
+.wpc-country-switcher {
+    position: relative;
+    flex-shrink: 0;
+    margin: 0 10px;
+    display: inline-block;
+    z-index: 20;
+}
+.wpc-country-switcher__toggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 10px;
+    border: none;
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.12);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    cursor: pointer;
+    white-space: nowrap;
+    line-height: 1;
+}
+.wpc-country-switcher__toggle:hover {
+    background: rgba(255, 255, 255, 0.22);
+}
+.wpc-country-switcher__caret {
+    font-size: 10px;
+}
+.wpc-country-switcher__flag {
+    width: 20px;
+    height: 20px;
+    object-fit: cover;
+    border-radius: 50%;
+    display: inline-block;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.08);
+}
+.wpc-country-switcher__menu {
+    display: none;
+    position: absolute;
+    top: 100%;
+    right: 0;
+    z-index: 100;
+    margin: 8px 0 0;
+    padding: 14px;
+    gap: 18px;
+    min-width: max-content;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
+}
+.wpc-country-switcher.is-open .wpc-country-switcher__menu {
+    display: flex;
+}
+/* Qualified with the parent (.wpc-country-switcher__menu .item, not just
+   .item) so this beats the theme's own dynamically-generated
+   ".primary-header a { color: <light header text color> }" rule on CSS
+   specificity (two classes vs. one class + one element) — without that,
+   only the .is-active item (already two classes) was legible; every other
+   country in the dropdown inherited the header's light nav-link color and
+   was nearly invisible against the white dropdown background. */
+.wpc-country-switcher__menu .wpc-country-switcher__item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    color: #333;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px;
+    border-radius: 6px;
+}
+.wpc-country-switcher__item:hover {
+    background: rgba(0, 0, 0, 0.05);
+}
+.wpc-country-switcher__menu .wpc-country-switcher__item.is-active {
+    color: #cc581a;
+    font-weight: 800;
+}
+.wpc-country-switcher__flag--lg {
+    width: 44px;
+    height: 44px;
+    /* Deliberately no ring/border here for the active state: India's own
+       saffron band is close enough to the brand accent (#cc581a) that a
+       ring in that color around the flag reads as part of the flag
+       artwork rather than a UI indicator. The active country is instead
+       marked by the bold, colored code label underneath only — never by
+       styling applied to the flag image itself. */
+}
+@media (max-width: 991px) {
+    .wpc-country-switcher {
+        margin: 0 8px;
+    }
+}
+
+/* UAE homepage hero banner — the "Frontpage Before Main Content (UAE)"
+   sidebar's own banner, styled from CSS rather than a designed image so it
+   doesn't depend on marketing creative being produced first. Kept visually
+   distinct from India's seasonal image banners (different layout, UAE flag
+   accent stripe) so the two countries are never showing identical promo
+   content. */
+.wpc-ae-hero-banner {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    flex-wrap: wrap;
+    padding: 22px 28px 22px 40px;
+    margin-bottom: 10px;
+    border-radius: 10px;
+    overflow: hidden;
+    background: linear-gradient(135deg, #cc581a 0%, #a8461a 100%);
+    color: #fff;
+}
+/* UAE flag accent as a thin left-edge stripe (its own layer, never under
+   the text) instead of a diagonal band cut across the banner's content. */
+.wpc-ae-hero-banner::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 10px;
+    background: linear-gradient(
+        to bottom,
+        #00732f 0%, #00732f 33%,
+        #fff 33%, #fff 66%,
+        #000 66%, #000 100%
+    );
+}
+.wpc-ae-hero-banner__text h3 {
+    margin: 0 0 4px;
+    font-size: 20px;
+    font-weight: 800;
+    color: #fff;
+}
+.wpc-ae-hero-banner__text p {
+    margin: 0;
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.9);
+}
+.wpc-ae-hero-banner__cta {
+    flex-shrink: 0;
+    padding: 10px 20px;
+    border-radius: 20px;
+    background: #fff;
+    color: #a8461a;
+    font-weight: 700;
+    font-size: 13px;
+    white-space: nowrap;
+    text-decoration: none;
+}
+.wpc-ae-hero-banner__cta:hover {
+    background: rgba(255, 255, 255, 0.85);
+}
+@media (max-width: 600px) {
+    .wpc-ae-hero-banner {
+        padding: 18px 20px;
+    }
+}
+
+/* A Redux-generated inline <style> tag (theme customizer output — same
+   pattern as the earlier ".primary-header a" color issue) re-declares
+   ".content-widgets .widget { margin-bottom: 0 }" late in the page, at the
+   exact same specificity as style.css's own "margin-bottom: 40px" rule, so
+   it wins on source order and zeroes the gap between every widget in this
+   sidebar — including pre-existing ones on India's homepage, so it's not
+   something to change globally. For the two new UAE widgets specifically,
+   an extra selector (id / an extra class already on the element) raises
+   specificity just for them, so the poster slider and hero banner don't
+   visually run into each other. */
+.content-widgets .widget.st-slider-widget {
+    margin-bottom: 20px;
+}
+#block-90.widget {
+    margin-bottom: 20px;
+}
+
+/* Language toggle (English / Arabic) — only ever rendered for a country
+   that has more than one language option (today, only UAE). Sits under the
+   country dropdown's flag list as a compact pair of text links. */
+.wpc-country-switcher__lang {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid #eee;
+}
+.wpc-country-switcher__lang-item {
+    font-size: 12px;
+    font-weight: 600;
+    color: #666;
+    padding: 4px 10px;
+    border-radius: 20px;
+}
+.wpc-country-switcher__lang-item:hover {
+    background: rgba(0, 0, 0, 0.05);
+}
+.wpc-country-switcher__lang-item.is-active {
+    background: #cc581a;
+    color: #fff;
+}
+
+/* Bilingual content utility — any widget's own HTML can hold both an
+   English and an Arabic version of the same text, wrapped in these two
+   classes; only the one matching the visitor's current language (the
+   "lang-en"/"lang-ar" class wpcoupon_get_current_language() adds to <body>,
+   see inc/core/countries.php) is shown. This is the self-serve way to add
+   bilingual copy to a widget without any code change. */
+body.lang-en .i18n-ar {
+    display: none;
+}
+body.lang-ar .i18n-en {
+    display: none;
+}
+/* Arabic is RTL — flip the two widgets this powers today (hero banner, its
+   flag accent stripe) so they read naturally right-to-left instead of just
+   mirroring the English layout's text direction. */
+body.lang-ar .wpc-ae-hero-banner {
+    direction: rtl;
+    text-align: right;
+}
+body.lang-ar .wpc-ae-hero-banner::before {
+    left: auto;
+    right: 0;
+}
+body.lang-ar .wpc-ae-hero-banner {
+    padding: 22px 40px 22px 28px;
+}
+
+/* Categories page (/categories/, templates/category-az.php) — the theme's
+   own ".cate-az .category-name img" rule renders the uploaded photo at a
+   bare 2em (~32px) with no object-fit, so real photos (as opposed to the
+   simple single-color icon glyphs this size was designed for) are too small
+   to recognize and can be stretched off their aspect ratio. Sized up to
+   match the theme's other circular badges (e.g. the 44px country flag
+   badges in .wpc-country-switcher__flag--lg) and given object-fit so the
+   photo crops instead of stretching, while keeping the same circular,
+   bordered look the theme already uses here. */
+.cate-az .category-name .cat-az-thumb {
+    width: 44px;
+    height: 44px;
+    margin-right: 10px;
+}
+.cate-az .category-name .cat-az-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+}
+/* The thumb + label live inside <li class="cate-parent"> (nested one level
+   inside the <a class="category-name">), so that's the element that needs
+   to be a flex row for the now-larger thumb to sit centered next to the
+   text instead of relying on float + line-height. */
+.cate-az .cate-parent {
+    display: flex;
+    align-items: center;
+}
+
+/* India's Elementor homepage slider ("Home Page Slider", post 10509) —
+   its own custom CSS positions the prev/next arrows with a single fixed
+   side each (".elementor-swiper-button-prev { left: -20px }" / "-next
+   { right: -20px }"), written with no RTL case in mind since India has
+   always been LTR-only. Elementor's own swiper JS also sets an inline
+   left/right/width on these buttons at runtime to center them vertically;
+   in RTL that inline calculation comes out with both left AND right
+   pinned to real pixel values and no explicit width, which makes the
+   browser stretch the button to fill the entire gap between them —
+   exactly the huge white "eye" shape stretching across the UAE Arabic
+   slider. This doesn't touch the Elementor template itself (its content
+   and custom CSS are untouched, and this still applies to every use of
+   the ".hp-slider" class) — it just forces the buttons back to their
+   intended fixed size, mirrored for RTL, in every place they'd otherwise
+   be overridden: our own CSS, Elementor's base CSS, and its inline JS
+   style all specify these three properties, so this needs !important to
+   consistently win over whichever of those set most recently. */
+body.rtl .hp-slider .elementor-swiper-button {
+    width: 26px !important;
+    height: 26px !important;
+}
+body.rtl .hp-slider .elementor-swiper-button-prev {
+    left: auto !important;
+    right: -8px !important;
+}
+body.rtl .hp-slider .elementor-swiper-button-next {
+    left: -8px !important;
+    right: auto !important;
+}

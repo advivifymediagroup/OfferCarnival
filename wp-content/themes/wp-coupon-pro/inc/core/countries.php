@@ -1,0 +1,1444 @@
+<?php
+/**
+ * Country helper functions.
+ *
+ * Multi-country support:
+ * - Step A: data model + admin fields (wpc_country taxonomy, per-store/
+ *   per-coupon country assignment).
+ * - Step B: header country switcher + per-country logo.
+ * - Step C: content filtering by country (bottom of this file) — narrows
+ *   coupon/store listings to the active country, but only ever for a
+ *   visitor who has explicitly switched away from the default country.
+ *
+ * @package WP Coupon/inc/core
+ * @since 7.1.0
+ */
+
+/**
+ * Get all registered countries (wpc_country terms).
+ *
+ * @param array $args get_terms() args override.
+ * @return array WP_Term[]
+ */
+function wpcoupon_get_countries( $args = array() ) {
+	$default = array(
+		'taxonomy'   => 'wpc_country',
+		'hide_empty' => false,
+		'orderby'    => 'name',
+		'order'      => 'ASC',
+	);
+
+	$terms = get_terms( wp_parse_args( $args, $default ) );
+
+	return is_wp_error( $terms ) ? array() : $terms;
+}
+
+/**
+ * Get the slug of the default country (falls back to 'in').
+ *
+ * A country is "default" when its term meta `_wpc_is_default` is set.
+ * If none is flagged yet (e.g. before the migration below has run),
+ * we fall back to 'in' so existing behaviour never changes silently.
+ *
+ * @return string country term slug, e.g. 'in'
+ */
+function wpcoupon_get_default_country() {
+	static $default_slug = null;
+
+	if ( null !== $default_slug ) {
+		return $default_slug;
+	}
+
+	$terms = wpcoupon_get_countries(
+		array(
+			'meta_key'   => '_wpc_is_default',
+			'meta_value' => 'on',
+		)
+	);
+
+	$default_slug = ! empty( $terms ) ? $terms[0]->slug : 'in';
+
+	return $default_slug;
+}
+
+/**
+ * Get the countries a store (coupon_store term) operates in.
+ *
+ * @param int $store_term_id coupon_store term_id.
+ * @return string[] country slugs, e.g. array( 'in', 'ae' )
+ */
+function wpcoupon_get_store_countries( $store_term_id ) {
+	$countries = get_term_meta( $store_term_id, '_wpc_store_countries', true );
+
+	if ( empty( $countries ) || ! is_array( $countries ) ) {
+		// Not migrated / not set yet: treat as default-country-only so
+		// nothing disappears from the site before the backfill runs.
+		return array( wpcoupon_get_default_country() );
+	}
+
+	return $countries;
+}
+
+/**
+ * Get the countries a coupon post is valid in (wpc_country terms).
+ *
+ * @param int $coupon_id coupon post ID.
+ * @return string[] country slugs
+ */
+function wpcoupon_get_coupon_countries( $coupon_id ) {
+	$terms = wp_get_object_terms( $coupon_id, 'wpc_country', array( 'fields' => 'slugs' ) );
+
+	if ( is_wp_error( $terms ) || empty( $terms ) ) {
+		return array( wpcoupon_get_default_country() );
+	}
+
+	return $terms;
+}
+
+/**
+ * Build a `term_id => "Name"` options list for the store multicheck field,
+ * used in inc/config/metabox-config.php.
+ *
+ * @return array
+ */
+function wpcoupon_get_country_field_options() {
+	$options = array();
+
+	foreach ( wpcoupon_get_countries() as $term ) {
+		$options[ $term->slug ] = $term->name;
+	}
+
+	return $options;
+}
+
+/**
+ * Resolve the flag icon URL for a country term.
+ *
+ * Prefers a crisp, purpose-built flag SVG bundled with the theme
+ * (assets/flags/{slug}.svg — from the MIT-licensed "flag-icons" project,
+ * the same kind of vector flag set most sites use) over anything else, so
+ * every country looks right out of the box with zero admin setup. The
+ * uploaded "Flag" field in Coupons → Countries is only an override, for
+ * the rare case a country needs a non-standard variant — it's never
+ * required, and a raster image is never generated for this automatically.
+ *
+ * @param WP_Term $term
+ * @return string flag URL, or '' if neither exists
+ */
+function wpcoupon_get_country_flag_url( $term ) {
+	$bundled_path = get_template_directory() . '/assets/flags/' . $term->slug . '.svg';
+
+	if ( file_exists( $bundled_path ) ) {
+		return get_template_directory_uri() . '/assets/flags/' . $term->slug . '.svg';
+	}
+
+	$custom = get_term_meta( $term->term_id, '_wpc_flag_image', true );
+
+	return $custom ? $custom : '';
+}
+
+/**
+ * Get the visitor's currently active country slug.
+ *
+ * Read-only, request-scoped (a switch takes effect via
+ * wpcoupon_handle_country_switch() below, which redirects before this is
+ * ever called for that request). Falls back to the default country
+ * whenever there's no cookie, an invalid one, or a plain page load — so
+ * this is a pure addition: no existing code path is affected unless it
+ * explicitly calls this function.
+ *
+ * @return string country term slug, e.g. 'in' or 'ae'
+ */
+function wpcoupon_get_current_country() {
+	static $current = null;
+
+	if ( null !== $current ) {
+		return $current;
+	}
+
+	$default = wpcoupon_get_default_country();
+	$cookie  = isset( $_COOKIE['wpc_country'] ) ? sanitize_key( wp_unslash( $_COOKIE['wpc_country'] ) ) : '';
+
+	if ( ! $cookie ) {
+		$current = $default;
+		return $current;
+	}
+
+	// wpc_country registers on `init` at the theme's default priority, but
+	// widgets_init (and anything else that fires earlier) can call this
+	// function before that — e.g. wpcoupon_sidebar_desc() reading a theme
+	// option, which through the option_st_options filter below ends up
+	// calling wpcoupon_get_current_language() -> this function, during
+	// widgets_init. At that point get_terms() for a not-yet-registered
+	// taxonomy comes back empty, and the static cache above would then
+	// permanently lock in the wrong (default) answer for the entire rest
+	// of the request. Skip caching until the taxonomy actually exists, so
+	// an early call gets a same-request best-effort answer without
+	// poisoning every later, correctly-timed call.
+	if ( ! taxonomy_exists( 'wpc_country' ) ) {
+		return $cookie;
+	}
+
+	$valid_slugs = wp_list_pluck( wpcoupon_get_countries(), 'slug' );
+	$current     = in_array( $cookie, $valid_slugs, true ) ? $cookie : $default;
+
+	return $current;
+}
+
+/**
+ * Which language to render the site in: 'en' (default, everywhere) or 'ar'.
+ *
+ * Arabic is only ever available for a country whose language list includes
+ * it (today, only 'ae' — see wpcoupon_get_country_language_options()); the
+ * 'ar' cookie value is otherwise ignored, so switching country back to
+ * India always forces English regardless of what was picked for UAE.
+ *
+ * The actual locale switch (core/theme translations, is_rtl()) is done by
+ * the determine_locale filter in mu-plugins/wpc-language-switch.php, which
+ * reads the same two cookies independently — this function is what the
+ * theme's own PHP (switcher UI, bilingual content helpers) checks so the
+ * two stay in sync without duplicating the country/language gating logic.
+ *
+ * @return string 'en' or 'ar'
+ */
+function wpcoupon_get_current_language() {
+	$country = wpcoupon_get_current_country();
+	$options = wpcoupon_get_country_language_options( $country );
+
+	if ( count( $options ) < 2 ) {
+		return 'en';
+	}
+
+	$cookie = isset( $_COOKIE['wpc_lang'] ) ? sanitize_key( wp_unslash( $_COOKIE['wpc_lang'] ) ) : '';
+
+	return in_array( $cookie, array_keys( $options ), true ) ? $cookie : 'en';
+}
+
+/**
+ * Language choices available for a given country. Only UAE offers Arabic
+ * today; every other country (India included) only ever offers English, so
+ * no language toggle renders for them at all.
+ *
+ * @param string $country_slug
+ * @return array<string,string> locale code => native display name
+ */
+function wpcoupon_get_country_language_options( $country_slug ) {
+	$map = array(
+		'ae' => array(
+			'en' => 'English',
+			'ar' => 'العربية',
+		),
+	);
+
+	return isset( $map[ $country_slug ] ) ? $map[ $country_slug ] : array( 'en' => 'English' );
+}
+
+/**
+ * Handle a language-switch link (?wpc_lang=ar): validate against the
+ * current country's own language options, cookie it, redirect to the clean
+ * URL. Mirrors wpcoupon_handle_country_switch() below.
+ */
+function wpcoupon_handle_language_switch() {
+	if ( empty( $_GET['wpc_lang'] ) ) {
+		return;
+	}
+
+	$lang    = sanitize_key( wp_unslash( $_GET['wpc_lang'] ) );
+	$options = wpcoupon_get_country_language_options( wpcoupon_get_current_country() );
+
+	if ( ! array_key_exists( $lang, $options ) ) {
+		return;
+	}
+
+	setcookie( 'wpc_lang', $lang, time() + ( 180 * DAY_IN_SECONDS ), COOKIEPATH ? COOKIEPATH : '/', COOKIE_DOMAIN );
+
+	wp_safe_redirect( remove_query_arg( 'wpc_lang' ) );
+	exit;
+}
+add_action( 'init', 'wpcoupon_handle_language_switch' );
+
+/**
+ * Adds a lang-en / lang-ar class to <body> so any widget's own markup can
+ * show/hide bilingual content with plain CSS — see the ".i18n-en" /
+ * ".i18n-ar" utility classes in custom-style.css. This is the mechanism the
+ * UAE homepage's hero banner and Popular Stores title use, and the one a
+ * content editor can reuse in any other widget without touching PHP: wrap
+ * the English text in `<span class="i18n-en">…</span>` and the Arabic in
+ * `<span class="i18n-ar">…</span>` in the same widget, and the right one
+ * shows automatically based on the visitor's language choice.
+ */
+add_filter( 'body_class', function ( $classes ) {
+	$classes[] = 'lang-' . wpcoupon_get_current_language();
+	return $classes;
+} );
+
+/**
+ * The "WPCoupon Slider" widget (inc/widgets/slider.php) stores one flat
+ * image URL per slide, so it can't hold two language variants in the same
+ * field. Rather than modifying that shared widget class, this swaps in an
+ * "-ar" suffixed sibling image (e.g. "ae-poster-1.svg" -> "ae-poster-1-ar.svg")
+ * immediately before render, for this specific widget only, and only when
+ * that sibling file actually exists — so a poster nobody has translated yet
+ * just keeps showing its English version instead of a broken image.
+ *
+ * This is also the pattern for adding a new bilingual poster yourself: drop
+ * "your-poster.svg" and "your-poster-ar.svg" side by side and both
+ * languages work with no code changes.
+ */
+/**
+ * Extracts one language's text out of a
+ * `<span class="i18n-en">…</span><span class="i18n-ar">…</span>` pair — the
+ * same markup custom-style.css's ".i18n-en"/".i18n-ar" CSS toggle uses for
+ * bilingual widget *body* content. A widget *title* can't use that CSS
+ * toggle: WordPress core always runs a title through `esc_html()` (see the
+ * default `widget_title` filter), which would turn the markup into visible
+ * "<span>" text instead of hiding half of it. Returns $html unchanged if it
+ * doesn't contain this markup, so a plain, non-bilingual title (the normal
+ * case everywhere except this one UAE widget) is a no-op.
+ */
+function wpcoupon_extract_i18n_text( $html, $lang ) {
+	if ( 'ar' === $lang && preg_match( '#<span class="i18n-ar">(.*?)</span>#s', $html, $m ) ) {
+		return trim( $m[1] );
+	}
+
+	if ( preg_match( '#<span class="i18n-en">(.*?)</span>#s', $html, $m ) ) {
+		return trim( $m[1] );
+	}
+
+	return $html;
+}
+
+add_filter( 'widget_display_callback', function ( $instance, $widget_object, $args ) {
+	if ( ! empty( $instance['title'] ) ) {
+		$instance['title'] = wpcoupon_extract_i18n_text( $instance['title'], wpcoupon_get_current_language() );
+	}
+
+	if ( 'st_slider' !== $widget_object->id_base || 'ar' !== wpcoupon_get_current_language() ) {
+		return $instance;
+	}
+
+	if ( empty( $instance['items'] ) || ! is_array( $instance['items'] ) ) {
+		return $instance;
+	}
+
+	foreach ( $instance['items'] as &$item ) {
+		if ( empty( $item['image_url'] ) || ! empty( $item['image_id'] ) ) {
+			continue;
+		}
+
+		$ar_url = preg_replace( '/(\.[a-z0-9]+)$/i', '-ar$1', $item['image_url'] );
+
+		if ( $ar_url !== $item['image_url'] ) {
+			$ar_path = str_replace(
+				get_template_directory_uri(),
+				get_template_directory(),
+				$ar_url
+			);
+
+			if ( file_exists( $ar_path ) ) {
+				$item['image_url'] = $ar_url;
+			}
+		}
+	}
+	unset( $item );
+
+	return $instance;
+}, 10, 3 );
+
+/**
+ * Shows a coupon's Arabic title (stored in `_wpc_title_ar` post meta)
+ * instead of its English `post_title`, when a visitor has Arabic selected.
+ *
+ * A coupon's title can't hold the `.i18n-en`/`.i18n-ar` span pair the way
+ * widget *body* content and coupon *descriptions* do: WordPress escapes
+ * `get_the_title()` in some contexts (e.g. the `title=""` tooltip attribute
+ * on coupon.php:18) and doesn't in others (the visible heading on
+ * coupon.php:27), so embedded HTML would show as literal text in the
+ * tooltip. A separate meta field sidesteps that entirely. Only affects
+ * coupons that actually have `_wpc_title_ar` set — every coupon created
+ * before this (all of India's, and the first 5 UAE stores) has no such
+ * meta, so this is a silent no-op for them; they keep their one English
+ * title regardless of language, exactly as before.
+ */
+add_filter( 'the_title', function ( $title, $post_id = 0 ) {
+	if ( is_admin() && ! wp_doing_ajax() ) {
+		return $title;
+	}
+
+	if ( 'ar' !== wpcoupon_get_current_language() || ! $post_id || 'coupon' !== get_post_type( $post_id ) ) {
+		return $title;
+	}
+
+	$ar_title = get_post_meta( $post_id, '_wpc_title_ar', true );
+
+	return $ar_title ? $ar_title : $title;
+}, 10, 2 );
+
+/**
+ * Swaps in a coupon's Arabic description (stored in `_wpc_desc_ar` post
+ * meta) for its English `post_content`, when a visitor has Arabic selected.
+ *
+ * This can't be the `.i18n-en`/`.i18n-ar` CSS-toggle span pair used
+ * elsewhere: coupon listings show a short excerpt via
+ * WPCoupon_Coupon::get_excerpt(), which calls wp_trim_words() — and
+ * wp_trim_words() strips all HTML tags before trimming, which would delete
+ * the very spans the toggle depends on and concatenate both languages'
+ * text together as one run-on string. Swapping the raw post_content itself,
+ * before anything reads it, sidesteps that entirely and works for both the
+ * excerpt and the full single-coupon view.
+ *
+ * Hooked to `the_posts` (the full result array of every WP_Query/get_posts()
+ * call, including the theme's own custom widget queries) rather than
+ * `the_content`, because WPCoupon_Coupon reads $post->post_content directly
+ * off the post object when it's set up — never through the `the_content`
+ * filter — so filtering `the_content` would never reach it.
+ */
+add_filter( 'the_posts', function ( $posts ) {
+	if ( is_admin() && ! wp_doing_ajax() ) {
+		return $posts;
+	}
+
+	if ( 'ar' !== wpcoupon_get_current_language() ) {
+		return $posts;
+	}
+
+	foreach ( $posts as $post ) {
+		if ( 'coupon' !== $post->post_type ) {
+			continue;
+		}
+
+		$ar_desc = get_post_meta( $post->ID, '_wpc_desc_ar', true );
+
+		if ( $ar_desc ) {
+			$post->post_content = $ar_desc;
+
+			// The theme's own loop templates re-fetch the post by ID
+			// (get_post(get_the_ID())) instead of reusing this exact loop
+			// object, which goes through WP_Post::get_instance() and reads
+			// straight from the 'posts' object cache — populated earlier
+			// (before this filter ran) with the original English content,
+			// and otherwise completely untouched by mutating $post here.
+			// Overwriting that cache entry with our already-modified object
+			// is what makes every later get_post() for this ID (whichever
+			// template does it) see the swap too.
+			wp_cache_set( $post->ID, $post, 'posts' );
+		}
+	}
+
+	return $posts;
+} );
+
+/**
+ * A handful of button/label strings (coupon "Get Deal"/"Show Code" buttons,
+ * the store-page filter labels, "Submit a Coupon") don't come from the
+ * theme's own gettext strings at all — they're free-text values from the
+ * Theme Options panel (Redux), read via wpcoupon_get_option() straight out
+ * of the 'st_options' row. No amount of translating the theme's .pot file
+ * touches these, since they were never `__()` calls to begin with. This
+ * filters the *option value itself* (the standard `option_{name}` filter
+ * WordPress applies to every get_option() call) so Arabic visitors see
+ * these swapped, without changing the actual saved setting an admin sees
+ * and edits in wp-admin — India, and English-UAE, get the exact same
+ * option array back unchanged.
+ */
+add_filter( 'option_st_options', function ( $value ) {
+	if ( is_admin() && ! wp_doing_ajax() ) {
+		return $value;
+	}
+
+	if ( 'ar' !== wpcoupon_get_current_language() || ! is_array( $value ) ) {
+		return $value;
+	}
+
+	$ar_overrides = array(
+		'coupon_cate_filter_title'   => 'تصفية حسب',
+		'filter_item_all_lebel'      => 'الكل',
+		'filter_item_codes_lebel'    => 'كود',
+		'filter_item_printable_lebel'=> 'قابل للطباعة',
+		'filter_item_sales_lebel'    => 'عرض',
+		'get_code_btn_txt'           => 'عرض الكود',
+		'get_deal_btn_txt'           => 'احصل على العرض',
+		'header_submit_button_text'  => 'أرسل كوبونًا',
+		'print_coupon_btn_txt'       => 'قابل للطباعة',
+		'store_sidebar_filter_title' => 'تصفية المتجر',
+	);
+
+	foreach ( $ar_overrides as $key => $ar_text ) {
+		if ( isset( $value[ $key ] ) && '' !== $value[ $key ] ) {
+			$value[ $key ] = $ar_text;
+		}
+	}
+
+	return $value;
+}, 5 );
+
+/**
+ * Handle a country-switch link (?wpc_country=ae): validate, cookie it,
+ * then redirect to the clean URL so no page ever renders with the query
+ * arg in it (avoids polluting caches/analytics with it).
+ *
+ * No-ops on every request that doesn't carry the query arg, i.e. on
+ * literally every request today until the switcher UI links to it.
+ */
+function wpcoupon_handle_country_switch() {
+	if ( empty( $_GET['wpc_country'] ) ) {
+		return;
+	}
+
+	$slug        = sanitize_key( wp_unslash( $_GET['wpc_country'] ) );
+	$valid_slugs = wp_list_pluck( wpcoupon_get_countries(), 'slug' );
+
+	if ( ! in_array( $slug, $valid_slugs, true ) ) {
+		return;
+	}
+
+	setcookie( 'wpc_country', $slug, time() + ( 180 * DAY_IN_SECONDS ), COOKIEPATH ? COOKIEPATH : '/', COOKIE_DOMAIN );
+
+	wp_safe_redirect( remove_query_arg( 'wpc_country' ) );
+	exit;
+}
+add_action( 'init', 'wpcoupon_handle_country_switch' );
+
+/**
+ * Resolve which logo URL to show for a given country.
+ *
+ * Falls back to the existing global Theme Options logo (today's exact
+ * behaviour) whenever the country is the default one, or has no
+ * country-specific logo uploaded yet. This is the guarantee that India
+ * keeps looking exactly as it does today unless someone explicitly
+ * uploads a different logo for a non-default country.
+ *
+ * @param string $country_slug
+ * @return string logo URL, possibly empty (theme falls back to site title)
+ */
+function wpcoupon_get_logo_for_country( $country_slug ) {
+	if ( $country_slug && $country_slug !== wpcoupon_get_default_country() ) {
+		$term = get_term_by( 'slug', $country_slug, 'wpc_country' );
+		if ( $term ) {
+			$logo = get_term_meta( $term->term_id, '_wpc_country_logo', true );
+			if ( $logo ) {
+				return $logo;
+			}
+		}
+	}
+
+	return wpcoupon_get_option( 'site_logo', false, 'url' );
+}
+
+/**
+ * Which sidebar id to render for one of the three frontpage regions
+ * ('frontpage-before-main', 'frontpage-main', 'frontpage-after-main').
+ * Non-default countries get their own registered "-{country}" counterpart
+ * of each (e.g. 'frontpage-main-ae') so content curated with specific
+ * India post/term IDs — Popular Stores, Daily Deals — never has to be
+ * shared with or filtered out for another country. Falls back to the
+ * original India sidebar id whenever a country has no dedicated one
+ * registered, or its sidebar has no widgets assigned (nothing published
+ * for it yet in wp-admin) — which is *by design* for
+ * 'frontpage-after-main-ae' today (see the comment on its registration in
+ * functions.php): that region's shared content is made bilingual in place
+ * instead of forked, so it's meant to always fall through to the shared
+ * sidebar. Either way, a new country never renders a blank homepage
+ * section.
+ *
+ * @param string $base_id 'frontpage-before-main' | 'frontpage-main' | 'frontpage-after-main'
+ */
+function wpcoupon_get_country_sidebar_id( $base_id ) {
+	$country = wpcoupon_get_current_country();
+	$default = wpcoupon_get_default_country();
+
+	if ( $country === $default ) {
+		return $base_id;
+	}
+
+	$country_sidebar_id = $base_id . '-' . $country;
+
+	if ( is_active_sidebar( $country_sidebar_id ) ) {
+		return $country_sidebar_id;
+	}
+
+	return $base_id;
+}
+
+/**
+ * Render the header country switcher (flag dropdown).
+ *
+ * Deliberately NOT built on the theme's Semantic UI `.dropdown` component:
+ * assets/js/global.js auto-initializes *every* `.dropdown` element site-wide
+ * with `$('.dropdown').dropdown()`, which expects Semantic's own markup
+ * conventions and will rewrite/empty anything that doesn't match. To avoid
+ * fighting that (and to avoid any risk of it affecting other dropdowns on
+ * the site), this is a tiny, self-contained, dependency-free widget: plain
+ * links (so it still works with JS disabled) plus a few lines of scoped
+ * vanilla JS just to toggle the menu open/closed.
+ *
+ * Renders nothing if fewer than 2 countries exist, so an un-configured
+ * site shows nothing extra.
+ */
+function wpcoupon_country_switcher() {
+	$countries = wpcoupon_get_countries();
+
+	if ( count( $countries ) < 2 ) {
+		return;
+	}
+
+	$current_slug = wpcoupon_get_current_country();
+	$current_term = null;
+
+	foreach ( $countries as $term ) {
+		if ( $term->slug === $current_slug ) {
+			$current_term = $term;
+			break;
+		}
+	}
+
+	if ( ! $current_term ) {
+		return;
+	}
+
+	$current_flag = wpcoupon_get_country_flag_url( $current_term );
+	?>
+	<div class="wpc-country-switcher">
+		<button type="button" class="wpc-country-switcher__toggle" aria-haspopup="true" aria-expanded="false">
+			<?php if ( $current_flag ) : ?>
+				<img class="wpc-country-switcher__flag" src="<?php echo esc_url( $current_flag ); ?>" alt="" />
+			<?php endif; ?>
+			<span><?php echo esc_html( strtoupper( $current_term->slug ) ); ?></span>
+			<span class="wpc-country-switcher__caret" aria-hidden="true">&#9662;</span>
+		</button>
+		<div class="wpc-country-switcher__menu">
+			<?php foreach ( $countries as $term ) :
+				$flag = wpcoupon_get_country_flag_url( $term );
+				$url  = esc_url( add_query_arg( 'wpc_country', $term->slug ) );
+				?>
+				<a class="wpc-country-switcher__item<?php echo ( $term->slug === $current_slug ) ? ' is-active' : ''; ?>" href="<?php echo $url; ?>" title="<?php echo esc_attr( $term->name ); ?>">
+					<?php if ( $flag ) : ?>
+						<img class="wpc-country-switcher__flag wpc-country-switcher__flag--lg" src="<?php echo esc_url( $flag ); ?>" alt="" />
+					<?php endif; ?>
+					<span><?php echo esc_html( strtoupper( $term->slug ) ); ?></span>
+				</a>
+			<?php endforeach; ?>
+		</div>
+		<?php
+		$lang_options = wpcoupon_get_country_language_options( $current_slug );
+		if ( count( $lang_options ) > 1 ) :
+			$current_lang = wpcoupon_get_current_language();
+			?>
+			<div class="wpc-country-switcher__lang">
+				<?php foreach ( $lang_options as $code => $label ) :
+					$lang_url = esc_url( add_query_arg( 'wpc_lang', $code ) );
+					?>
+					<a class="wpc-country-switcher__lang-item<?php echo ( $code === $current_lang ) ? ' is-active' : ''; ?>" href="<?php echo $lang_url; ?>">
+						<?php echo esc_html( $label ); ?>
+					</a>
+				<?php endforeach; ?>
+			</div>
+		<?php endif; ?>
+	</div>
+	<script>
+	( function() {
+		var wrap = document.currentScript.previousElementSibling;
+		if ( ! wrap || ! wrap.classList.contains( 'wpc-country-switcher' ) ) {
+			return;
+		}
+		var toggle = wrap.querySelector( '.wpc-country-switcher__toggle' );
+		toggle.addEventListener( 'click', function( e ) {
+			e.stopPropagation();
+			var open = wrap.classList.toggle( 'is-open' );
+			toggle.setAttribute( 'aria-expanded', open ? 'true' : 'false' );
+		} );
+		document.addEventListener( 'click', function() {
+			wrap.classList.remove( 'is-open' );
+			toggle.setAttribute( 'aria-expanded', 'false' );
+		} );
+		document.addEventListener( 'keydown', function( e ) {
+			if ( e.key === 'Escape' ) {
+				wrap.classList.remove( 'is-open' );
+				toggle.setAttribute( 'aria-expanded', 'false' );
+			}
+		} );
+	} )();
+	</script>
+	<?php
+}
+
+/**
+ * Data for seed_ae_stores_batch2() — 20 additional real, well-known
+ * UAE-market stores, each with a couple of coupons. A plain function
+ * (rather than inline in the CLI method) so a one-off script can reuse the
+ * exact same data without going through WP_CLI.
+ */
+function wpcoupon_ae_stores_batch2_data() {
+	return array(
+		array(
+			'name' => 'Amazon.ae', 'slug' => 'amazon-ae', 'url' => 'https://www.amazon.ae/', 'category' => 'ecommerce',
+			'coupons' => array(
+				array( 'title' => 'Amazon.ae – Up to 40% Off Electronics Sale', 'title_ar' => 'أمازون الإمارات – خصم يصل إلى 40% على الإلكترونيات', 'type' => 'sale', 'save' => '40% OFF', 'desc_en' => 'Save up to 40% across laptops, phones and accessories in this week\'s Amazon.ae electronics sale.', 'desc_ar' => 'وفّر حتى 40% على أجهزة الكمبيوتر المحمولة والهواتف والإكسسوارات في تخفيضات أمازون الإمارات لهذا الأسبوع.' ),
+				array( 'title' => 'Amazon.ae – 15% Off First Prime Order with Code PRIME15', 'title_ar' => 'أمازون الإمارات – خصم 15% على أول طلب برايم برمز PRIME15', 'type' => 'code', 'code' => 'PRIME15', 'save' => '15% OFF', 'desc_en' => 'New Prime members get 15% off their first order sitewide.', 'desc_ar' => 'يحصل أعضاء برايم الجدد على خصم 15% على أول طلب لهم في جميع أنحاء الموقع.' ),
+			),
+		),
+		array(
+			'name' => '6thStreet', 'slug' => '6thstreet', 'url' => 'https://www.6thstreet.com/ae-en/', 'category' => 'fashion',
+			'coupons' => array(
+				array( 'title' => '6thStreet – Up to 50% Off Sneakers & Sportswear', 'title_ar' => '6thStreet – خصم يصل إلى 50% على الأحذية الرياضية والملابس الرياضية', 'type' => 'sale', 'save' => '50% OFF', 'desc_en' => 'Discounts across leading sneaker and sportswear brands.', 'desc_ar' => 'تخفيضات على أبرز ماركات الأحذية والملابس الرياضية.' ),
+				array( 'title' => '6thStreet – Extra 10% Off with Code STREET10', 'title_ar' => '6thStreet – خصم إضافي 10% برمز STREET10', 'type' => 'code', 'code' => 'STREET10', 'save' => '10% OFF', 'desc_en' => 'Stack an extra 10% off already-discounted items at checkout.', 'desc_ar' => 'احصل على خصم إضافي 10% على المنتجات المخفّضة بالفعل عند الدفع.' ),
+			),
+		),
+		array(
+			'name' => 'Sivvi', 'slug' => 'sivvi', 'url' => 'https://www.sivvi.com/en-ae', 'category' => 'fashion',
+			'coupons' => array(
+				array( 'title' => 'Sivvi – Up to 70% Off End of Season Sale', 'title_ar' => 'سيفي – خصم يصل إلى 70% في تخفيضات نهاية الموسم', 'type' => 'sale', 'save' => '70% OFF', 'desc_en' => 'Deep discounts on fashion and accessories as the season closes out.', 'desc_ar' => 'خصومات كبيرة على الأزياء والإكسسوارات مع نهاية الموسم.' ),
+				array( 'title' => 'Sivvi – 20% Off New Arrivals with Code SIVVI20', 'title_ar' => 'سيفي – خصم 20% على المنتجات الجديدة برمز SIVVI20', 'type' => 'code', 'code' => 'SIVVI20', 'save' => '20% OFF', 'desc_en' => '20% off the newest arrivals for a limited time.', 'desc_ar' => 'خصم 20% على أحدث المنتجات لفترة محدودة.' ),
+			),
+		),
+		array(
+			'name' => 'Styli', 'slug' => 'styli-uae', 'url' => 'https://www.styli.com/ae-en', 'category' => 'fashion',
+			'coupons' => array(
+				array( 'title' => 'Styli – Up to 60% Off Everything', 'title_ar' => 'ستايلي – خصم يصل إلى 60% على كل شيء', 'type' => 'sale', 'save' => '60% OFF', 'desc_en' => 'Storewide markdowns on the latest affordable fashion.', 'desc_ar' => 'تخفيضات شاملة على أحدث صيحات الأزياء بأسعار مناسبة.' ),
+				array( 'title' => 'Styli – Free Shipping on Orders Over AED 100', 'title_ar' => 'ستايلي – شحن مجاني للطلبات فوق 100 درهم', 'type' => 'sale', 'save' => 'FREE DELIVERY', 'desc_en' => 'No delivery charge on orders above AED 100.', 'desc_ar' => 'بدون رسوم توصيل للطلبات التي تزيد عن 100 درهم.' ),
+			),
+		),
+		array(
+			'name' => 'Virgin Megastore', 'slug' => 'virgin-megastore-uae', 'url' => 'https://www.virginmegastore.ae/', 'category' => 'arts-and-entertainment',
+			'coupons' => array(
+				array( 'title' => 'Virgin Megastore – 20% Off Headphones & Audio', 'title_ar' => 'فيرجن ميجاستور – خصم 20% على السماعات والصوتيات', 'type' => 'sale', 'save' => '20% OFF', 'desc_en' => '20% off a selection of headphones, speakers and audio gear.', 'desc_ar' => 'خصم 20% على تشكيلة من السماعات ومكبرات الصوت وأجهزة الصوت.' ),
+				array( 'title' => 'Virgin Megastore – 10% Off with Code VIRGIN10', 'title_ar' => 'فيرجن ميجاستور – خصم 10% برمز VIRGIN10', 'type' => 'code', 'code' => 'VIRGIN10', 'save' => '10% OFF', 'desc_en' => '10% off books, games and gadgets storewide.', 'desc_ar' => 'خصم 10% على الكتب والألعاب والأجهزة في جميع أنحاء المتجر.' ),
+			),
+		),
+		array(
+			'name' => 'Lulu Hypermarket', 'slug' => 'lulu-hypermarket', 'url' => 'https://www.luluhypermarket.com/en-ae', 'category' => 'food-beverages-and-tobacco',
+			'coupons' => array(
+				array( 'title' => 'Lulu Hypermarket – Weekly Grocery Offers', 'title_ar' => 'لولو هايبرماركت – عروض البقالة الأسبوعية', 'type' => 'sale', 'save' => 'UP TO 30% OFF', 'desc_en' => 'Fresh weekly savings on groceries and household essentials.', 'desc_ar' => 'وفورات أسبوعية جديدة على البقالة ومستلزمات المنزل.' ),
+				array( 'title' => 'Lulu Hypermarket – AED 15 Off Online Orders Over AED 100', 'title_ar' => 'لولو هايبرماركت – خصم 15 درهمًا على الطلبات الإلكترونية فوق 100 درهم', 'type' => 'code', 'code' => 'LULU15', 'save' => 'AED 15 OFF', 'desc_en' => 'AED 15 off your online grocery order over AED 100.', 'desc_ar' => 'خصم 15 درهمًا على طلب البقالة الإلكتروني الذي يتجاوز 100 درهم.' ),
+			),
+		),
+		array(
+			'name' => 'Danube Home', 'slug' => 'danube-home', 'url' => 'https://danubehome.com/uae/', 'category' => 'home-and-garden',
+			'coupons' => array(
+				array( 'title' => 'Danube Home – Up to 50% Off Furniture', 'title_ar' => 'دانوب هوم – خصم يصل إلى 50% على الأثاث', 'type' => 'sale', 'save' => '50% OFF', 'desc_en' => 'Save on furniture and home decor across every room.', 'desc_ar' => 'وفّر على الأثاث وديكور المنزل لكل غرفة.' ),
+				array( 'title' => 'Danube Home – Free Delivery on Orders Over AED 500', 'title_ar' => 'دانوب هوم – توصيل مجاني للطلبات فوق 500 درهم', 'type' => 'sale', 'save' => 'FREE DELIVERY', 'desc_en' => 'Free delivery when you spend AED 500 or more.', 'desc_ar' => 'توصيل مجاني عند الإنفاق بقيمة 500 درهم أو أكثر.' ),
+			),
+		),
+		array(
+			'name' => 'IKEA UAE', 'slug' => 'ikea-uae', 'url' => 'https://www.ikea.com/ae/en/', 'category' => 'home-and-garden',
+			'coupons' => array(
+				array( 'title' => 'IKEA UAE – Family Member Exclusive Offers', 'title_ar' => 'ايكيا الإمارات – عروض حصرية لأعضاء IKEA Family', 'type' => 'sale', 'save' => 'MEMBER DEALS', 'desc_en' => 'Exclusive prices for IKEA Family members this month.', 'desc_ar' => 'أسعار حصرية لأعضاء IKEA Family هذا الشهر.' ),
+				array( 'title' => 'IKEA UAE – 10% Off Kitchen Essentials with Code IKEA10', 'title_ar' => 'ايكيا الإمارات – خصم 10% على مستلزمات المطبخ برمز IKEA10', 'type' => 'code', 'code' => 'IKEA10', 'save' => '10% OFF', 'desc_en' => '10% off kitchenware and organizers.', 'desc_ar' => 'خصم 10% على أدوات المطبخ وحلول التنظيم.' ),
+			),
+		),
+		array(
+			'name' => 'Talabat', 'slug' => 'talabat', 'url' => 'https://www.talabat.com/uae', 'category' => 'restaurant-and-dining',
+			'coupons' => array(
+				array( 'title' => 'Talabat – 25% Off Your First Order with Code TAL25', 'title_ar' => 'طلبات – خصم 25% على أول طلب برمز TAL25', 'type' => 'code', 'code' => 'TAL25', 'save' => '25% OFF', 'desc_en' => '25% off your first food order through the app.', 'desc_ar' => 'خصم 25% على أول طلب طعام عبر التطبيق.' ),
+				array( 'title' => 'Talabat – Free Delivery on Orders Over AED 30', 'title_ar' => 'طلبات – توصيل مجاني للطلبات فوق 30 درهمًا', 'type' => 'sale', 'save' => 'FREE DELIVERY', 'desc_en' => 'No delivery fee on qualifying orders over AED 30.', 'desc_ar' => 'بدون رسوم توصيل للطلبات المؤهلة التي تزيد عن 30 درهمًا.' ),
+			),
+		),
+		array(
+			'name' => 'Careem', 'slug' => 'careem', 'url' => 'https://www.careem.com/en-ae/', 'category' => 'travel',
+			'coupons' => array(
+				array( 'title' => 'Careem – 30% Off Your Next 3 Rides with Code RIDE30', 'title_ar' => 'كريم – خصم 30% على رحلاتك الثلاث القادمة برمز RIDE30', 'type' => 'code', 'code' => 'RIDE30', 'save' => '30% OFF', 'desc_en' => '30% off your next three Careem rides.', 'desc_ar' => 'خصم 30% على رحلاتك الثلاث القادمة مع كريم.' ),
+				array( 'title' => 'Careem – Free Delivery on Careem Now First Order', 'title_ar' => 'كريم – توصيل مجاني على أول طلب من Careem Now', 'type' => 'sale', 'save' => 'FREE DELIVERY', 'desc_en' => 'No delivery charge on your first Careem Now food or grocery order.', 'desc_ar' => 'بدون رسوم توصيل على أول طلب طعام أو بقالة عبر Careem Now.' ),
+			),
+		),
+		array(
+			'name' => 'Emirates Holidays', 'slug' => 'emirates-holidays', 'url' => 'https://www.emiratesholidays.com/', 'category' => 'travel',
+			'coupons' => array(
+				array( 'title' => 'Emirates Holidays – Up to AED 500 Off Package Bookings', 'title_ar' => 'إمارات هوليدايز – خصم يصل إلى 500 درهم على باقات السفر', 'type' => 'sale', 'save' => 'UP TO AED 500 OFF', 'desc_en' => 'Save on flight-and-hotel package bookings for a limited time.', 'desc_ar' => 'وفّر على حجوزات باقات الطيران والفندق لفترة محدودة.' ),
+				array( 'title' => 'Emirates Holidays – 10% Off with Code EHOL10', 'title_ar' => 'إمارات هوليدايز – خصم 10% برمز EHOL10', 'type' => 'code', 'code' => 'EHOL10', 'save' => '10% OFF', 'desc_en' => '10% off selected holiday packages booked online.', 'desc_ar' => 'خصم 10% على باقات عطلات مختارة عند الحجز عبر الإنترنت.' ),
+			),
+		),
+		array(
+			'name' => 'Cleartrip UAE', 'slug' => 'cleartrip-uae', 'url' => 'https://www.cleartrip.com/ae/', 'category' => 'travel',
+			'coupons' => array(
+				array( 'title' => 'Cleartrip UAE – AED 100 Off Flight Bookings with Code FLY100', 'title_ar' => 'كليرتريب الإمارات – خصم 100 درهم على حجوزات الطيران برمز FLY100', 'type' => 'code', 'code' => 'FLY100', 'save' => 'AED 100 OFF', 'desc_en' => 'AED 100 off domestic and international flight bookings.', 'desc_ar' => 'خصم 100 درهم على حجوزات الرحلات الداخلية والدولية.' ),
+				array( 'title' => 'Cleartrip UAE – Up to 20% Off Hotel Stays', 'title_ar' => 'كليرتريب الإمارات – خصم يصل إلى 20% على الإقامة الفندقية', 'type' => 'sale', 'save' => '20% OFF', 'desc_en' => 'Save up to 20% on hotel bookings across the UAE and abroad.', 'desc_ar' => 'وفّر حتى 20% على حجوزات الفنادق داخل الإمارات وخارجها.' ),
+			),
+		),
+		array(
+			'name' => 'Awok', 'slug' => 'awok', 'url' => 'https://www.awok.com/', 'category' => 'electronics',
+			'coupons' => array(
+				array( 'title' => 'Awok – Up to 45% Off Home Electronics', 'title_ar' => 'أووك – خصم يصل إلى 45% على الأجهزة الإلكترونية المنزلية', 'type' => 'sale', 'save' => '45% OFF', 'desc_en' => 'Discounts across small appliances and home electronics.', 'desc_ar' => 'خصومات على الأجهزة المنزلية الصغيرة والإلكترونيات المنزلية.' ),
+				array( 'title' => 'Awok – Extra 10% Off with Code AWOK10', 'title_ar' => 'أووك – خصم إضافي 10% برمز AWOK10', 'type' => 'code', 'code' => 'AWOK10', 'save' => '10% OFF', 'desc_en' => 'An extra 10% off already discounted electronics.', 'desc_ar' => 'خصم إضافي 10% على الإلكترونيات المخفّضة بالفعل.' ),
+			),
+		),
+		array(
+			'name' => 'Jumbo Electronics', 'slug' => 'jumbo-electronics', 'url' => 'https://www.jumbo.ae/', 'category' => 'electronics',
+			'coupons' => array(
+				array( 'title' => 'Jumbo Electronics – Up to 35% Off TVs & Laptops', 'title_ar' => 'جمبو للإلكترونيات – خصم يصل إلى 35% على التلفزيونات وأجهزة الكمبيوتر المحمولة', 'type' => 'sale', 'save' => '35% OFF', 'desc_en' => 'Markdowns on major TV and laptop brands.', 'desc_ar' => 'تخفيضات على أبرز ماركات التلفزيونات وأجهزة الكمبيوتر المحمولة.' ),
+				array( 'title' => 'Jumbo Electronics – Free Installation with Code JUMBOSETUP', 'title_ar' => 'جمبو للإلكترونيات – تركيب مجاني برمز JUMBOSETUP', 'type' => 'code', 'code' => 'JUMBOSETUP', 'save' => 'FREE INSTALLATION', 'desc_en' => 'Free installation on qualifying large appliance purchases.', 'desc_ar' => 'تركيب مجاني عند شراء الأجهزة الكبيرة المؤهلة.' ),
+			),
+		),
+		array(
+			'name' => 'Homebox', 'slug' => 'homebox-uae', 'url' => 'https://www.homebox.com/en-ae/', 'category' => 'furniture',
+			'coupons' => array(
+				array( 'title' => 'Homebox – Up to 50% Off Clearance', 'title_ar' => 'هوم بوكس – خصم يصل إلى 50% على تصفية المخزون', 'type' => 'sale', 'save' => '50% OFF', 'desc_en' => 'Clearance prices on furniture and home accessories.', 'desc_ar' => 'أسعار تصفية على الأثاث وإكسسوارات المنزل.' ),
+				array( 'title' => 'Homebox – 15% Off with Code HOMEBOX15', 'title_ar' => 'هوم بوكس – خصم 15% برمز HOMEBOX15', 'type' => 'code', 'code' => 'HOMEBOX15', 'save' => '15% OFF', 'desc_en' => '15% off new-season furniture collections.', 'desc_ar' => 'خصم 15% على تشكيلات الأثاث للموسم الجديد.' ),
+			),
+		),
+		array(
+			'name' => 'Boots UAE', 'slug' => 'boots-uae', 'url' => 'https://www.boots.ae/', 'category' => 'beauty-and-cosmetics',
+			'coupons' => array(
+				array( 'title' => 'Boots UAE – Up to 40% Off Skincare & Makeup', 'title_ar' => 'بوتس الإمارات – خصم يصل إلى 40% على العناية بالبشرة والمكياج', 'type' => 'sale', 'save' => '40% OFF', 'desc_en' => 'Save across leading skincare and makeup brands.', 'desc_ar' => 'وفّر على أبرز ماركات العناية بالبشرة والمكياج.' ),
+				array( 'title' => 'Boots UAE – 3 for 2 on Selected Vitamins', 'title_ar' => 'بوتس الإمارات – اشترِ اثنين واحصل على الثالث مجانًا على فيتامينات مختارة', 'type' => 'sale', 'save' => '3 FOR 2', 'desc_en' => 'Buy two, get one free across selected vitamin ranges.', 'desc_ar' => 'اشترِ اثنين واحصل على الثالث مجانًا من تشكيلات فيتامينات مختارة.' ),
+			),
+		),
+		array(
+			'name' => 'Farfetch UAE', 'slug' => 'farfetch-uae', 'url' => 'https://www.farfetch.com/ae/', 'category' => 'fashion',
+			'coupons' => array(
+				array( 'title' => 'Farfetch UAE – Up to 50% Off Designer Sale', 'title_ar' => 'فارفيتش الإمارات – خصم يصل إلى 50% على تخفيضات المصممين', 'type' => 'sale', 'save' => '50% OFF', 'desc_en' => 'Designer fashion markdowns across menswear and womenswear.', 'desc_ar' => 'تخفيضات على أزياء المصممين للرجال والنساء.' ),
+				array( 'title' => 'Farfetch UAE – 10% Off New Customers with Code FFNEW10', 'title_ar' => 'فارفيتش الإمارات – خصم 10% للعملاء الجدد برمز FFNEW10', 'type' => 'code', 'code' => 'FFNEW10', 'save' => '10% OFF', 'desc_en' => '10% off your first Farfetch order.', 'desc_ar' => 'خصم 10% على أول طلب لك من فارفيتش.' ),
+			),
+		),
+		array(
+			'name' => 'Level Shoes', 'slug' => 'level-shoes', 'url' => 'https://www.levelshoes.com/en-ae/', 'category' => 'apparel-and-accessories',
+			'coupons' => array(
+				array( 'title' => 'Level Shoes – Up to 60% Off Season Sale', 'title_ar' => 'ليفل شوز – خصم يصل إلى 60% في تخفيضات الموسم', 'type' => 'sale', 'save' => '60% OFF', 'desc_en' => 'Luxury footwear and accessories at season-sale prices.', 'desc_ar' => 'أحذية وإكسسوارات فاخرة بأسعار تخفيضات الموسم.' ),
+				array( 'title' => 'Level Shoes – Free Shipping Sitewide', 'title_ar' => 'ليفل شوز – شحن مجاني على كامل الموقع', 'type' => 'sale', 'save' => 'FREE DELIVERY', 'desc_en' => 'Free shipping on every order, no minimum spend.', 'desc_ar' => 'شحن مجاني على كل طلب، بدون حد أدنى للإنفاق.' ),
+			),
+		),
+		array(
+			'name' => 'Etisalat', 'slug' => 'etisalat', 'url' => 'https://www.etisalat.ae/', 'category' => 'web-services',
+			'coupons' => array(
+				array( 'title' => 'Etisalat – Discounted eLife Home Bundles', 'title_ar' => 'اتصالات – باقات eLife المنزلية بأسعار مخفضة', 'type' => 'sale', 'save' => 'BUNDLE DEALS', 'desc_en' => 'Special pricing on eLife internet and TV bundles for new subscribers.', 'desc_ar' => 'أسعار خاصة على باقات إنترنت وتلفزيون eLife للمشتركين الجدد.' ),
+				array( 'title' => 'Etisalat – AED 50 Bill Credit with Code ETISALAT50', 'title_ar' => 'اتصالات – رصيد فاتورة 50 درهمًا برمز ETISALAT50', 'type' => 'code', 'code' => 'ETISALAT50', 'save' => 'AED 50 CREDIT', 'desc_en' => 'AED 50 bill credit when you switch your mobile plan online.', 'desc_ar' => 'رصيد فاتورة بقيمة 50 درهمًا عند تحويل باقتك عبر الإنترنت.' ),
+			),
+		),
+		array(
+			'name' => 'du', 'slug' => 'du-telecom', 'url' => 'https://www.du.ae/', 'category' => 'web-services',
+			'coupons' => array(
+				array( 'title' => 'du – Up to 20% Off Postpaid Plans', 'title_ar' => 'دو – خصم يصل إلى 20% على باقات الفوترة اللاحقة', 'type' => 'sale', 'save' => '20% OFF', 'desc_en' => 'Discounted rates on selected postpaid mobile plans.', 'desc_ar' => 'أسعار مخفضة على باقات مختارة من الفوترة اللاحقة.' ),
+				array( 'title' => 'du – Free Router with Home Internet Sign-Up', 'title_ar' => 'دو – راوتر مجاني عند الاشتراك في إنترنت المنزل', 'type' => 'sale', 'save' => 'FREE ROUTER', 'desc_en' => 'A free router included with new home internet subscriptions.', 'desc_ar' => 'راوتر مجاني مع كل اشتراك جديد في إنترنت المنزل.' ),
+			),
+		),
+	);
+}
+
+/**
+ * One-time backfill: creates IN / AE country terms and assigns every
+ * existing store + coupon to IN so nothing loses visibility.
+ *
+ * Deliberately NOT hooked to run automatically on a web request (that could
+ * mean thousands of wp_set_object_terms() calls blocking a real page load).
+ * Run it explicitly once, from WP-CLI, after deploying this code:
+ *
+ *   wp wpcoupon migrate-countries
+ *
+ * Safe to re-run: it only fills in what's missing.
+ */
+class WPCoupon_Countries_CLI_Command {
+
+	/**
+	 * Create the default countries (if missing) and backfill every
+	 * existing store/coupon to the default country (IN).
+	 *
+	 * ## OPTIONS
+	 *
+	 * [--dry-run]
+	 * : Report what would change without writing anything.
+	 *
+	 * ## EXAMPLES
+	 *
+	 *     wp wpcoupon migrate-countries
+	 *     wp wpcoupon migrate-countries --dry-run
+	 *
+	 * @subcommand migrate-countries
+	 * @when after_wp_load
+	 */
+	public function migrate_countries( $args, $assoc_args ) {
+		$dry_run = ! empty( $assoc_args['dry-run'] );
+
+		$countries = array(
+			'in' => array(
+				'name'      => 'India',
+				'currency'  => '₹',
+				'is_default'=> true,
+			),
+			'ae' => array(
+				'name'      => 'United Arab Emirates',
+				'currency'  => 'AED',
+				'is_default'=> false,
+			),
+		);
+
+		$term_ids = array();
+
+		foreach ( $countries as $slug => $data ) {
+			$term = get_term_by( 'slug', $slug, 'wpc_country' );
+
+			if ( ! $term ) {
+				WP_CLI::log( sprintf( 'Creating country term: %s (%s)', $data['name'], $slug ) );
+				if ( ! $dry_run ) {
+					$result = wp_insert_term( $data['name'], 'wpc_country', array( 'slug' => $slug ) );
+					if ( is_wp_error( $result ) ) {
+						WP_CLI::warning( $result->get_error_message() );
+						continue;
+					}
+					$term = get_term( $result['term_id'], 'wpc_country' );
+				}
+			} else {
+				WP_CLI::log( sprintf( 'Country term already exists: %s (%s)', $data['name'], $slug ) );
+			}
+
+			if ( $term && ! $dry_run ) {
+				$term_ids[ $slug ] = $term->term_id;
+				update_term_meta( $term->term_id, '_wpc_currency_symbol', $data['currency'] );
+				if ( $data['is_default'] ) {
+					update_term_meta( $term->term_id, '_wpc_is_default', 'on' );
+				}
+			}
+		}
+
+		if ( $dry_run ) {
+			WP_CLI::success( 'Dry run complete. No data was changed.' );
+			return;
+		}
+
+		$default_term_id = isset( $term_ids['in'] ) ? $term_ids['in'] : 0;
+
+		if ( ! $default_term_id ) {
+			WP_CLI::error( 'Could not resolve the IN country term id, aborting backfill.' );
+			return;
+		}
+
+		// Backfill stores (coupon_store terms) missing _wpc_store_countries.
+		$store_terms = get_terms(
+			array(
+				'taxonomy'   => 'coupon_store',
+				'hide_empty' => false,
+				'fields'     => 'ids',
+			)
+		);
+
+		$stores_updated = 0;
+		foreach ( $store_terms as $store_term_id ) {
+			$existing = get_term_meta( $store_term_id, '_wpc_store_countries', true );
+			if ( empty( $existing ) ) {
+				update_term_meta( $store_term_id, '_wpc_store_countries', array( 'in' ) );
+				$stores_updated++;
+			}
+		}
+		WP_CLI::log( sprintf( 'Stores backfilled to IN: %d (of %d total)', $stores_updated, count( $store_terms ) ) );
+
+		// Backfill coupons missing any wpc_country term.
+		$coupon_ids = get_posts(
+			array(
+				'post_type'      => 'coupon',
+				'post_status'    => 'any',
+				'posts_per_page' => -1,
+				'fields'         => 'ids',
+				'tax_query'      => array(
+					array(
+						'taxonomy' => 'wpc_country',
+						'operator' => 'NOT EXISTS',
+					),
+				),
+			)
+		);
+
+		$coupons_updated = 0;
+		foreach ( $coupon_ids as $coupon_id ) {
+			wp_set_object_terms( $coupon_id, array( $default_term_id ), 'wpc_country', false );
+			$coupons_updated++;
+		}
+		WP_CLI::log( sprintf( 'Coupons backfilled to IN: %d', $coupons_updated ) );
+
+		WP_CLI::success( 'Country migration complete.' );
+	}
+
+	/**
+	 * Create a handful of real, well-known UAE-market stores with sample
+	 * coupons, all tagged for the AE country — so the AE side of the site
+	 * has real content to show instead of an empty state.
+	 *
+	 * Store domains are real; the coupon codes/offers are placeholder
+	 * content (the same way this site's real India stores start life
+	 * before an editor plugs in the actual current affiliate offers) —
+	 * replace them with real, current offers before this goes live.
+	 *
+	 * Idempotent: matches stores by slug and coupons by title, so
+	 * re-running only fills in whatever's missing.
+	 *
+	 * ## OPTIONS
+	 *
+	 * [--dry-run]
+	 * : Report what would be created without writing anything.
+	 *
+	 * @subcommand seed-ae-stores
+	 * @when after_wp_load
+	 */
+	public function seed_ae_stores( $args, $assoc_args ) {
+		$dry_run = ! empty( $assoc_args['dry-run'] );
+
+		$ae_term = get_term_by( 'slug', 'ae', 'wpc_country' );
+		if ( ! $ae_term ) {
+			WP_CLI::error( 'The AE country term does not exist yet — run `wp wpcoupon migrate-countries` first.' );
+			return;
+		}
+
+		$author_id = 0;
+		$admins    = get_users( array( 'role' => 'administrator', 'number' => 1, 'fields' => 'ID' ) );
+		if ( $admins ) {
+			$author_id = (int) $admins[0];
+		}
+
+		$stores = array(
+			array(
+				'name'     => 'Noon',
+				'slug'     => 'noon-ae',
+				'url'      => 'https://www.noon.com/uae-en/',
+				'category' => 'electronics',
+				'coupons'  => array(
+					array( 'title' => 'Noon UAE – Up to 50% Off Electronics', 'type' => 'sale', 'save' => '50% OFF' ),
+					array( 'title' => 'Noon UAE – Extra 10% Off Sitewide with Code NOON10', 'type' => 'code', 'code' => 'NOON10', 'save' => '10% OFF' ),
+				),
+			),
+			array(
+				'name'     => 'Namshi',
+				'slug'     => 'namshi',
+				'url'      => 'https://www.namshi.com/uae-en/',
+				'category' => 'fashion',
+				'coupons'  => array(
+					array( 'title' => 'Namshi – Up to 70% Off Fashion Clearance', 'type' => 'sale', 'save' => '70% OFF' ),
+					array( 'title' => 'Namshi – 15% Off Your First Order with Code NAMSHI15', 'type' => 'code', 'code' => 'NAMSHI15', 'save' => '15% OFF' ),
+				),
+			),
+			array(
+				'name'     => 'Sharaf DG',
+				'slug'     => 'sharaf-dg',
+				'url'      => 'https://www.sharafdg.com/uae/',
+				'category' => 'electronics',
+				'coupons'  => array(
+					array( 'title' => 'Sharaf DG – Extra 10% Off Electronics with Code SHARAF10', 'type' => 'code', 'code' => 'SHARAF10', 'save' => '10% OFF' ),
+					array( 'title' => 'Sharaf DG – Free Delivery on Orders Above AED 200', 'type' => 'sale', 'save' => 'FREE DELIVERY' ),
+				),
+			),
+			array(
+				'name'     => 'Carrefour UAE',
+				'slug'     => 'carrefour-uae',
+				'url'      => 'https://www.carrefouruae.com/mafuae/en/',
+				'category' => 'food-beverages-and-tobacco',
+				'coupons'  => array(
+					array( 'title' => 'Carrefour UAE – Up to 30% Off Weekly Offers', 'type' => 'sale', 'save' => '30% OFF' ),
+					array( 'title' => 'Carrefour UAE – AED 20 Off Orders Over AED 150 with Code CARREFOUR20', 'type' => 'code', 'code' => 'CARREFOUR20', 'save' => 'AED 20 OFF' ),
+				),
+			),
+			array(
+				'name'     => 'Ounass',
+				'slug'     => 'ounass',
+				'url'      => 'https://www.ounass.ae/',
+				'category' => 'fashion',
+				'coupons'  => array(
+					array( 'title' => 'Ounass – Up to 60% Off Luxury Fashion Sale', 'type' => 'sale', 'save' => '60% OFF' ),
+					array( 'title' => 'Ounass – 10% Off New Arrivals with Code OUNASS10', 'type' => 'code', 'code' => 'OUNASS10', 'save' => '10% OFF' ),
+				),
+			),
+		);
+
+		$stores_created  = 0;
+		$coupons_created = 0;
+
+		foreach ( $stores as $store ) {
+			$term = get_term_by( 'slug', $store['slug'], 'coupon_store' );
+
+			if ( ! $term ) {
+				WP_CLI::log( sprintf( 'Creating store: %s', $store['name'] ) );
+				if ( $dry_run ) {
+					$stores_created++;
+				} else {
+					$result = wp_insert_term( $store['name'], 'coupon_store', array( 'slug' => $store['slug'] ) );
+					if ( is_wp_error( $result ) ) {
+						WP_CLI::warning( $store['name'] . ': ' . $result->get_error_message() );
+						continue;
+					}
+					$term = get_term( $result['term_id'], 'coupon_store' );
+					update_term_meta( $term->term_id, '_wpc_store_url', $store['url'] );
+					update_term_meta( $term->term_id, '_wpc_store_aff_url', $store['url'] );
+					update_term_meta( $term->term_id, '_wpc_store_heading', '%store_name% Coupon Codes & Deals' );
+					update_term_meta( $term->term_id, '_wpc_store_countries', array( 'ae' ) );
+					$stores_created++;
+				}
+			} else {
+				WP_CLI::log( sprintf( 'Store already exists: %s', $store['name'] ) );
+				if ( ! $dry_run ) {
+					// Make sure AE is in its country list without dropping any
+					// other country it may already be tagged for.
+					$countries = get_term_meta( $term->term_id, '_wpc_store_countries', true );
+					$countries = is_array( $countries ) ? $countries : array();
+					if ( ! in_array( 'ae', $countries, true ) ) {
+						$countries[] = 'ae';
+						update_term_meta( $term->term_id, '_wpc_store_countries', $countries );
+					}
+				}
+			}
+
+			if ( $dry_run || ! $term ) {
+				foreach ( $store['coupons'] as $coupon ) {
+					if ( ! get_page_by_title( $coupon['title'], OBJECT, 'coupon' ) ) {
+						WP_CLI::log( '  Would create coupon: ' . $coupon['title'] );
+						$coupons_created++;
+					}
+				}
+				continue;
+			}
+
+			foreach ( $store['coupons'] as $coupon ) {
+				$existing = get_page_by_title( $coupon['title'], OBJECT, 'coupon' );
+				if ( $existing ) {
+					WP_CLI::log( '  Coupon already exists: ' . $coupon['title'] );
+					continue;
+				}
+
+				$post_id = wp_insert_post(
+					array(
+						'post_title'  => $coupon['title'],
+						'post_type'   => 'coupon',
+						'post_status' => 'publish',
+						'post_author' => $author_id,
+					),
+					true
+				);
+
+				if ( is_wp_error( $post_id ) ) {
+					WP_CLI::warning( $coupon['title'] . ': ' . $post_id->get_error_message() );
+					continue;
+				}
+
+				wp_set_object_terms( $post_id, array( $term->term_id ), 'coupon_store', false );
+				wp_set_object_terms( $post_id, array( $ae_term->term_id ), 'wpc_country', false );
+
+				$category_term = get_term_by( 'slug', $store['category'], 'coupon_category' );
+				if ( $category_term ) {
+					wp_set_object_terms( $post_id, array( $category_term->term_id ), 'coupon_category', false );
+				}
+
+				update_post_meta( $post_id, '_wpc_coupon_type', $coupon['type'] );
+				update_post_meta( $post_id, '_wpc_coupon_type_code', isset( $coupon['code'] ) ? $coupon['code'] : '' );
+				update_post_meta( $post_id, '_wpc_store', array( $term->term_id ) );
+				update_post_meta( $post_id, '_wpc_coupon_save', $coupon['save'] );
+				update_post_meta( $post_id, '_wpc_expires', strtotime( '+90 days' ) );
+				update_post_meta( $post_id, '_wpc_used', 0 );
+				update_post_meta( $post_id, '_wpc_vote_up', 0 );
+				update_post_meta( $post_id, '_wpc_vote_down', 0 );
+
+				WP_CLI::log( '  Created coupon: ' . $coupon['title'] );
+				$coupons_created++;
+			}
+		}
+
+		if ( $dry_run ) {
+			WP_CLI::success( sprintf( 'Dry run: would create %d store(s) and %d coupon(s).', $stores_created, $coupons_created ) );
+		} else {
+			WP_CLI::success( sprintf( 'Done: %d store(s) created, %d coupon(s) created (existing ones were left untouched).', $stores_created, $coupons_created ) );
+		}
+	}
+
+	/**
+	 * A second, larger batch of real, well-known UAE-market stores — same
+	 * shape and same idempotency guarantees as seed_ae_stores() above, kept
+	 * as a separate command so re-running it never touches the first batch.
+	 *
+	 * Every coupon here also gets `_wpc_title_ar` (an Arabic title) and
+	 * `_wpc_desc_ar` (an Arabic description) — swapped in for the English
+	 * post_title/post_content only when a visitor has Arabic selected, by
+	 * the `the_title` / `the_posts` filters in this file. Both need to be
+	 * *separate meta fields* rather than the `.i18n-en`/`.i18n-ar` CSS-toggle
+	 * span pair used elsewhere on the homepage: a coupon's description goes
+	 * through wp_trim_words() for its listing excerpt, which strips all HTML
+	 * (deleting the very spans the toggle needs) before trimming, so the
+	 * language swap has to happen on the raw text instead. Store *names* are
+	 * deliberately left untranslated — they're brand names, not UI text.
+	 *
+	 * @subcommand seed-ae-stores-batch2
+	 * @when after_wp_load
+	 */
+	public function seed_ae_stores_batch2( $args, $assoc_args ) {
+		$dry_run = ! empty( $assoc_args['dry-run'] );
+
+		$ae_term = get_term_by( 'slug', 'ae', 'wpc_country' );
+		if ( ! $ae_term ) {
+			WP_CLI::error( 'The AE country term does not exist yet — run `wp wpcoupon migrate-countries` first.' );
+			return;
+		}
+
+		$author_id = 0;
+		$admins    = get_users( array( 'role' => 'administrator', 'number' => 1, 'fields' => 'ID' ) );
+		if ( $admins ) {
+			$author_id = (int) $admins[0];
+		}
+
+		$stores = wpcoupon_ae_stores_batch2_data();
+
+		$stores_created  = 0;
+		$coupons_created = 0;
+
+		foreach ( $stores as $store ) {
+			$term = get_term_by( 'slug', $store['slug'], 'coupon_store' );
+
+			if ( ! $term ) {
+				WP_CLI::log( sprintf( 'Creating store: %s', $store['name'] ) );
+				if ( $dry_run ) {
+					$stores_created++;
+				} else {
+					$result = wp_insert_term( $store['name'], 'coupon_store', array( 'slug' => $store['slug'] ) );
+					if ( is_wp_error( $result ) ) {
+						WP_CLI::warning( $store['name'] . ': ' . $result->get_error_message() );
+						continue;
+					}
+					$term = get_term( $result['term_id'], 'coupon_store' );
+					update_term_meta( $term->term_id, '_wpc_store_url', $store['url'] );
+					update_term_meta( $term->term_id, '_wpc_store_aff_url', $store['url'] );
+					update_term_meta( $term->term_id, '_wpc_store_heading', '%store_name% Coupon Codes & Deals' );
+					update_term_meta( $term->term_id, '_wpc_store_countries', array( 'ae' ) );
+					$stores_created++;
+				}
+			} elseif ( ! $dry_run ) {
+				$countries = get_term_meta( $term->term_id, '_wpc_store_countries', true );
+				$countries = is_array( $countries ) ? $countries : array();
+				if ( ! in_array( 'ae', $countries, true ) ) {
+					$countries[] = 'ae';
+					update_term_meta( $term->term_id, '_wpc_store_countries', $countries );
+				}
+			}
+
+			if ( $dry_run || ! $term ) {
+				foreach ( $store['coupons'] as $coupon ) {
+					if ( ! get_page_by_title( $coupon['title'], OBJECT, 'coupon' ) ) {
+						$coupons_created++;
+					}
+				}
+				continue;
+			}
+
+			foreach ( $store['coupons'] as $coupon ) {
+				if ( get_page_by_title( $coupon['title'], OBJECT, 'coupon' ) ) {
+					continue;
+				}
+
+				$post_id = wp_insert_post(
+					array(
+						'post_title'   => $coupon['title'],
+						'post_content' => $coupon['desc_en'],
+						'post_type'    => 'coupon',
+						'post_status'  => 'publish',
+						'post_author'  => $author_id,
+					),
+					true
+				);
+
+				if ( is_wp_error( $post_id ) ) {
+					WP_CLI::warning( $coupon['title'] . ': ' . $post_id->get_error_message() );
+					continue;
+				}
+
+				wp_set_object_terms( $post_id, array( $term->term_id ), 'coupon_store', false );
+				wp_set_object_terms( $post_id, array( $ae_term->term_id ), 'wpc_country', false );
+
+				$category_term = get_term_by( 'slug', $store['category'], 'coupon_category' );
+				if ( $category_term ) {
+					wp_set_object_terms( $post_id, array( $category_term->term_id ), 'coupon_category', false );
+				}
+
+				update_post_meta( $post_id, '_wpc_coupon_type', $coupon['type'] );
+				update_post_meta( $post_id, '_wpc_coupon_type_code', isset( $coupon['code'] ) ? $coupon['code'] : '' );
+				update_post_meta( $post_id, '_wpc_store', array( $term->term_id ) );
+				update_post_meta( $post_id, '_wpc_coupon_save', $coupon['save'] );
+				update_post_meta( $post_id, '_wpc_expires', strtotime( '+90 days' ) );
+				update_post_meta( $post_id, '_wpc_used', 0 );
+				update_post_meta( $post_id, '_wpc_vote_up', 0 );
+				update_post_meta( $post_id, '_wpc_vote_down', 0 );
+				update_post_meta( $post_id, '_wpc_title_ar', $coupon['title_ar'] );
+				update_post_meta( $post_id, '_wpc_desc_ar', $coupon['desc_ar'] );
+
+				$coupons_created++;
+			}
+		}
+
+		if ( $dry_run ) {
+			WP_CLI::success( sprintf( 'Dry run: would create %d store(s) and %d coupon(s).', $stores_created, $coupons_created ) );
+		} else {
+			WP_CLI::success( sprintf( 'Done: %d store(s) created, %d coupon(s) created (existing ones were left untouched).', $stores_created, $coupons_created ) );
+		}
+	}
+}
+
+if ( defined( 'WP_CLI' ) && WP_CLI ) {
+	WP_CLI::add_command( 'wpcoupon', 'WPCoupon_Countries_CLI_Command' );
+}
+
+/**
+ * ---------------------------------------------------------------------
+ * Content filtering by country (Step C)
+ * ---------------------------------------------------------------------
+ *
+ * Both hooks below share the same guarantee: they return/no-op immediately
+ * whenever the active country is the default one (India, today), which is
+ * every visitor who has never touched the switcher. That is the "no
+ * functional changes for India" contract for this step — the moment a
+ * request's country isn't the default, and only then, listings narrow to
+ * that country's tagged content.
+ *
+ * Both also deliberately skip: (a) real wp-admin screens (an admin's own
+ * browser might carry a wpc_country cookie from testing the frontend
+ * switcher — that must never filter what they see in the dashboard), and
+ * (b) direct single-item lookups (a specific coupon permalink, or a
+ * specific store's page by slug) — a bookmarked/shared link must always
+ * keep working even if that item isn't tagged for the visitor's country;
+ * only *listings* (archives, search, homepage widgets, "load more") are
+ * narrowed.
+ */
+
+/**
+ * Narrow every `coupon` post-type listing query to the active country.
+ *
+ * Fires for every WP_Query/get_posts() call, not just the main query, so
+ * this is the single place that covers archives, search, category/tag/
+ * store archives, and the theme's homepage widgets alike.
+ *
+ * Priority 20: the theme's own WPCoupon_Search::init() (inc/core/search.php)
+ * runs at the default priority 10 and sets post_type to 'coupon' on search
+ * requests — this must run after that, so the post_type check below sees
+ * the final value.
+ */
+function wpcoupon_filter_coupons_by_country( $query ) {
+	// Never touch a real wp-admin screen. wp_doing_ajax() is deliberately
+	// exempted from this skip: admin-ajax.php sets is_admin() to true even
+	// for the theme's own frontend "load more"/search-suggestion requests,
+	// and those must stay consistent with the page that triggered them.
+	if ( is_admin() && ! wp_doing_ajax() ) {
+		return;
+	}
+
+	// Two ways a query can be "about coupons": it explicitly asks for the
+	// coupon post type (widgets, get_posts() calls, search after
+	// WPCoupon_Search has set it), OR it's a taxonomy archive for one of
+	// the coupon-only taxonomies (store/category/tag) — WordPress does NOT
+	// populate query_vars['post_type'] for those at this point (it's
+	// resolved later, internally, from the taxonomy's registered object
+	// types), so checking post_type alone misses every store/category/tag
+	// archive page. is_tax() is reliable here: it's set during
+	// parse_query(), which always runs before pre_get_posts.
+	$post_type       = $query->get( 'post_type' );
+	$is_coupon_ptype = ( 'coupon' === $post_type ) || ( is_array( $post_type ) && in_array( 'coupon', $post_type, true ) );
+	$is_coupon_tax   = $query->is_tax( array( 'coupon_store', 'coupon_category', 'coupon_tag' ) );
+
+	if ( ! $is_coupon_ptype && ! $is_coupon_tax ) {
+		return;
+	}
+
+	// Direct single-item lookups (permalink, preview, ?p=123, admin-ajax
+	// "get this one coupon" calls) are never filtered — only listings are.
+	if ( $query->is_singular() || $query->get( 'p' ) || $query->get( 'page_id' ) || $query->get( 'name' ) ) {
+		return;
+	}
+
+	$country = wpcoupon_get_current_country();
+	$default = wpcoupon_get_default_country();
+
+	$country_clause = array(
+		'relation' => 'OR',
+		array(
+			'taxonomy' => 'wpc_country',
+			'field'    => 'slug',
+			'terms'    => array( $country ),
+		),
+	);
+
+	// On the default country only, also allow coupons with NO wpc_country
+	// term at all — matching wpcoupon_get_coupon_countries()'s own fallback
+	// ("untagged = default country"). Every coupon that existed before this
+	// feature shipped got explicitly tagged 'in' by the Step A migration,
+	// so this branch is a pure safety net for anything created without
+	// using the Countries field — it's what keeps this a genuine no-op for
+	// all of today's content while still stopping new country-specific
+	// content (e.g. AE-only stores) from leaking into India's listings.
+	if ( $country === $default ) {
+		$country_clause[] = array(
+			'taxonomy' => 'wpc_country',
+			'operator' => 'NOT EXISTS',
+		);
+	}
+
+	$tax_query = $query->get( 'tax_query' );
+	if ( ! is_array( $tax_query ) ) {
+		$tax_query = array();
+	}
+
+	$tax_query[] = $country_clause;
+
+	// Preserve whatever relation the query already had (e.g. a store or
+	// category tax_query already present) and AND our clause onto it.
+	if ( count( $tax_query ) > 1 && empty( $tax_query['relation'] ) ) {
+		$tax_query['relation'] = 'AND';
+	}
+
+	$query->set( 'tax_query', $tax_query );
+}
+add_action( 'pre_get_posts', 'wpcoupon_filter_coupons_by_country', 20 );
+
+/**
+ * Narrow "browse many stores" queries (coupon_store terms) to stores that
+ * operate in the active country.
+ *
+ * Deliberately skips single-term lookups (get_term_by( 'slug', ... ), the
+ * kind of call that resolves /store/amazon/'s own page) via the slug/
+ * term_taxonomy_id/single-id-include check below, so a store's page never
+ * 404s for a visitor just because that store isn't tagged for their
+ * country — only the *listing* of stores narrows. A curated multi-ID
+ * `include` (e.g. an admin's hand-picked "Popular Stores" widget) is still
+ * a listing, not a single lookup, so only a *single-ID* include is treated
+ * as "this resolves one specific term" and skipped.
+ */
+function wpcoupon_filter_stores_by_country( $args, $taxonomies ) {
+	if ( is_admin() && ! wp_doing_ajax() ) {
+		return $args;
+	}
+
+	if ( ! in_array( 'coupon_store', (array) $taxonomies, true ) ) {
+		return $args;
+	}
+
+	$is_single_include = ! empty( $args['include'] ) && 1 === count( (array) $args['include'] );
+
+	if ( ! empty( $args['slug'] ) || ! empty( $args['term_taxonomy_id'] ) || $is_single_include ) {
+		return $args;
+	}
+
+	$country = wpcoupon_get_current_country();
+	$default = wpcoupon_get_default_country();
+
+	$country_clause = array(
+		'relation' => 'OR',
+		array(
+			'key'     => '_wpc_store_countries',
+			'value'   => '"' . $country . '"',
+			'compare' => 'LIKE',
+		),
+	);
+
+	// Same safety net as the coupon filter above: on the default country,
+	// also allow stores with no _wpc_store_countries meta at all, matching
+	// wpcoupon_get_store_countries()'s own fallback. Every store that
+	// existed before this feature shipped got explicitly tagged 'in' by
+	// the Step A migration, so in practice this is a no-op for existing
+	// stores — what it actually does is stop a new country-specific store
+	// (e.g. an AE-only one) from also showing up in India's listings.
+	if ( $country === $default ) {
+		$country_clause[] = array(
+			'key'     => '_wpc_store_countries',
+			'compare' => 'NOT EXISTS',
+		);
+	}
+
+	$meta_query = ( ! empty( $args['meta_query'] ) && is_array( $args['meta_query'] ) ) ? $args['meta_query'] : array();
+
+	$meta_query[] = $country_clause;
+
+	if ( count( $meta_query ) > 1 && empty( $meta_query['relation'] ) ) {
+		$meta_query['relation'] = 'AND';
+	}
+
+	$args['meta_query'] = $meta_query;
+
+	return $args;
+}
+add_filter( 'get_terms_args', 'wpcoupon_filter_stores_by_country', 20, 2 );

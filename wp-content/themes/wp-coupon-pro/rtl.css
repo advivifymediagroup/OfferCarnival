@@ -1,0 +1,145 @@
+/*
+Theme Name: WP Coupon
+
+Adding support for language written in a Right To Left (RTL) direction is easy -
+it's just a matter of overwriting all the horizontal positioning attributes
+of your CSS stylesheet in a separate stylesheet file named rtl.css.
+
+http://codex.wordpress.org/Right_to_Left_Language_Support
+
+*/
+
+
+body {
+	direction: rtl;
+	unicode-bidi: embed;
+}
+/*Header Menu Icon*/
+.rtl .st-menu a i {
+	margin-left: 3px;
+	margin-right: 0px;
+}
+/*Header Search*/
+.rtl #header-search input[type=text]{
+	border-left: 1px solid #dfdfdf !important;
+	border-right: 1px solid #dfdfdf !important;
+	text-align: right;
+	padding-left: 40px !important;
+}
+.rtl #header-search .ui.search .prompt ~ .search.icon{
+	left:0;
+	right: auto;
+}
+
+.rtl .store-listing-item .coupon-detail .exp-text{
+	text-align: left;
+}
+
+.rtl #header-search .header-search-submit{
+	border-top-right-radius: 0px;
+	border-bottom-right-radius: 0px;
+	border-top-left-radius: 2px;
+	border-bottom-left-radius: 2px;
+	border-left: 1px solid #dfdfdf;
+	border-right: none;
+}
+
+.rtl #header-search .header-search-submit .icon{
+	margin-right: 0;
+	margin-left: 10px;
+}
+
+/*Header Nav User Action*/
+.rtl .nav-user-action .st-menu > li:first-child > a {
+	padding-left: 5px;
+}
+
+/*Site Footer Newsletter*/
+.rtl .widget_newsletter .ui.action.icon.input > input{
+	text-align: right;
+	border-right:1px solid #dfdfdf !important;
+	border-top-right-radius: 5px !important;
+	border-bottom-right-radius: 5px !important;
+	border-top-left-radius: 0px !important;
+	border-bottom-left-radius: 0px !important;
+	padding: 0 35px 0 0 !important;
+	height: 34.11px;
+}
+
+.rtl .ui[class*="left icon"].input>i.icon{
+	right: 1px;
+	left: 0;
+	top: 3px;
+}
+
+.rtl .newsletter-box-wrapper.shadow-box .input .ui.button{
+	border-top-left-radius: 5px !important;
+	border-bottom-left-radius: 5px !important;
+	border-top-right-radius: 0px !important;
+	border-bottom-right-radius: 0px !important;
+}
+
+/*Frontpage favorite category*/
+@media screen and (max-width: 991px) {
+	.frontpage-container .fav-category-area .cate-parent {
+		padding-right: 0px;
+	}
+}
+@media screen and (max-width: 790px){
+	.rtl .frontpage-container .fav-category-area .cate-parent{
+		padding-right: 0 !important;
+	}
+}
+
+.rtl .couponcat-sortby-wrapper .item .coupon-cat-sortby{
+	margin-right: 0px;
+	margin-left: 5px;
+	position: relative;
+	top: 2px;
+}
+
+/*Sidebar Area*/
+.rtl .sidebar .widget-content, .rtl .sidebar .ui.list, .rtl .sidebar .couponcat-sortby-wrapper.ui.list:last-child, .rtl .sidebar .list-categories, .rtl .sidebar .shadow-box{
+	padding-right:0px;
+}
+
+.rtl .widget-area.sidebar .wp-block-search__button-outside .wp-block-search__inside-wrapper .wp-block-search__button{
+	margin-right: 0px;
+}
+.rtl .widget-area.sidebar ul, .rtl .widget-area.sidebar ol{
+	padding-left: 0px;
+	padding-right: 0px;
+}
+.rtl .sidebar{
+	padding-right:0px
+}
+
+/*Share area*/
+.rtl .share-option{
+	text-align: right;
+}
+
+.rtl .entry-share{
+	display: inline-block;
+}
+
+/*Loop Coupon*/
+
+.rtl .store-listing-item .store-thumb-link .store-name a i:before{
+	content: "\f104";
+}
+
+.rtl .store-listing-item .store-thumb-link{
+	float: right;
+	margin-right: 0;
+	margin-left: 10px;
+}
+
+.rtl .store-listing-item .latest-coupon{
+	float:right;
+}
+
+.rtl .store-listing-item .coupon-detail{
+	float:left;
+}
+

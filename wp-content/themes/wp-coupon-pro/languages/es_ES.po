@@ -1,0 +1,1368 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: \n"
+"POT-Creation-Date: 2023-08-20 17:41+0600\n"
+"PO-Revision-Date: 2023-08-20 17:41+0600\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Language: es\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Generator: Poedit 3.2.2\n"
+"X-Poedit-Basepath: ..\n"
+"X-Poedit-KeywordsList: esc_html__;esc_html_e;esc_attr__;esc_attr_e;__;printf( _nx\n"
+"X-Poedit-SearchPath-0: .\n"
+"X-Poedit-SearchPathExcluded-0: inc/config/metabox-config.php\n"
+"X-Poedit-SearchPathExcluded-1: inc/config/option-config.php\n"
+"X-Poedit-SearchPathExcluded-2: inc/config\n"
+"X-Poedit-SearchPathExcluded-3: inc/metabox\n"
+"X-Poedit-SearchPathExcluded-4: inc/metabox-addons\n"
+"X-Poedit-SearchPathExcluded-5: inc/redux-extensions\n"
+"X-Poedit-SearchPathExcluded-6: inc/tgmpa\n"
+"X-Poedit-SearchPathExcluded-7: inc/woocomerce\n"
+"X-Poedit-SearchPathExcluded-8: inc/core/admin-update.php\n"
+"X-Poedit-SearchPathExcluded-9: inc/core/ajax.php\n"
+"X-Poedit-SearchPathExcluded-10: inc/core/helper.php\n"
+"X-Poedit-SearchPathExcluded-11: inc/core/hooks.php\n"
+"X-Poedit-SearchPathExcluded-12: inc/core/schedule-event.php\n"
+"X-Poedit-SearchPathExcluded-13: inc/core/sharing.php\n"
+"X-Poedit-SearchPathExcluded-14: inc/core/term-editor.php\n"
+"X-Poedit-SearchPathExcluded-15: inc/core/theme-updater.php\n"
+"X-Poedit-SearchPathExcluded-16: recommend-plugins\n"
+"X-Poedit-SearchPathExcluded-17: inc/custom-code.php\n"
+"X-Poedit-SearchPathExcluded-18: inc/extras.php\n"
+"X-Poedit-SearchPathExcluded-19: inc/post-type.php\n"
+"X-Poedit-SearchPathExcluded-20: inc/siteorigin.php\n"
+
+#: 404.php:27
+msgid ""
+"Sorry! We can't seem to find that page. But since you're here, check out some of our "
+"best deals below. Maybe try one of the links below or a search?"
+msgstr ""
+"দুঃখিত! আমরা সেই পৃষ্ঠাটি খুঁজে পাচ্ছি না। কিন্তু যেহেতু আপনি এখানে আছেন, নিচে আমাদের সেরা কিছু "
+"ডিল দেখুন। হয়তো নীচের লিঙ্ক বা একটি অনুসন্ধান এক চেষ্টা?"
+
+#: 404.php:36 inc/widgets/popular-stores.php:134
+msgid "Popular Stores"
+msgstr "জনপ্রিয় স্টোরসমূহ"
+
+#: 404.php:43
+msgid "Recent coupons"
+msgstr "সাম্প্রতিক কুপন"
+
+#: archive-store.php:68
+msgid "0 - 9"
+msgstr "০ - ৯"
+
+#: archive-store.php:83 templates/store-az.php:94
+msgid "Featured Stores"
+msgstr "বিশিষ্ট স্টোরসমূহ"
+
+#: archive-store.php:108 templates/store-az.php:117
+#, php-format
+msgid "Stores - %s"
+msgstr "স্টোর - %s"
+
+#: archive-store.php:123 templates/store-az.php:140
+msgid "Stores - 0-9"
+msgstr "স্টোর - ০-১০"
+
+#: comments.php:48
+msgid "Comment navigation"
+msgstr "মন্তব্য সমূহ"
+
+#: comments.php:51
+msgid "Older Comments"
+msgstr "পুরাতন মন্তব্য"
+
+#: comments.php:55
+msgid "Newer Comments"
+msgstr "নতুন মন্তব্য"
+
+#: comments.php:72 loop/coupon-meta.php:71
+msgid "Comments are closed."
+msgstr "মন্তব্য বন্ধ করা হয়েছে"
+
+#: comments.php:92
+#, php-format
+msgid "Required fields are marked %s"
+msgstr "চিহ্নিত %s ক্ষেত্র পূরণ করুন "
+
+#: comments.php:99 inc/widgets/categories.php:157 inc/widgets/category-grid-view.php:181
+#: inc/widgets/popular-stores.php:166
+msgid "Name"
+msgstr "নাম"
+
+#: comments.php:104 loop/coupon-meta.php:15
+msgid "Email"
+msgstr "ইমেইল"
+
+#: comments.php:108
+msgid "Website"
+msgstr "ওয়েব সাইট"
+
+#: comments.php:112
+msgid "Comment"
+msgstr "কমেন্ট"
+
+#: comments.php:118
+#, php-format
+msgid "You must be %s to post a comment."
+msgstr ""
+
+#: comments.php:119
+msgid "logged in"
+msgstr "লগ ইন"
+
+#: comments.php:125
+#, php-format
+msgid "Logged in as %1$s. %2$s"
+msgstr "লগ ইন করেছেন %1$s. %2$s"
+
+#: comments.php:127
+msgid "Log out of this account"
+msgstr "এই একাউন্টের লগ আউট "
+
+#: comments.php:127
+msgid "Log out?"
+msgstr "লগ আউট? "
+
+#: comments.php:129
+msgid "Your email address will not be published."
+msgstr ""
+
+#: comments.php:142
+msgid "Let other know how much you saved"
+msgstr ""
+
+#: content-none.php:2
+msgid "Nothing Found"
+msgstr "কিছুই পাওয়া যায় নাই"
+
+#: content-none.php:7
+#, php-format
+msgid "Ready to publish your first post? %s."
+msgstr ""
+
+#: content-none.php:10
+msgid ""
+"Sorry, but nothing matched your search terms. Please try again with some different "
+"keywords."
+msgstr "দুঃখিত, কিন্তু কিছুই আপনার অনুসন্ধান পদ মেলেনি. কিছু ভিন্ন কীওয়ার্ড দিয়ে আবার চেষ্টা করুন।"
+
+#: content-none.php:15
+msgid ""
+"It seems we can&rsquo;t find what you&rsquo;re looking for. Perhaps searching can help."
+msgstr ""
+
+#: coupon-comments.php:32 inc/template-tags.php:227
+msgid "Reply"
+msgstr "প্রতিক্রিয়া"
+
+#: coupon-comments.php:40 inc/widgets/coupons.php:134 inc/widgets/coupons.php:179
+#: inc/widgets/coupons.php:225 taxonomy-coupon_category.php:77
+#: taxonomy-coupon_store.php:108 taxonomy-coupon_tag.php:53
+msgid "Loading..."
+msgstr ""
+
+#: coupon-comments.php:40
+msgid "Load More Comments"
+msgstr "নতুন কমেন্টস লোডিং"
+
+#: coupon-comments.php:49
+msgid "No comment, be the first."
+msgstr "কোন মন্তব্য পাওয়া যায় নাই।  আপনার মন্তব্য প্রথম মন্তব্য হবে"
+
+#: footer.php:100
+#, php-format
+msgid "Copyright &copy; %1$s %2$s. All Rights Reserved. "
+msgstr ""
+
+#: footer.php:107
+#, php-format
+msgid "WordPress Coupon Theme by %s"
+msgstr ""
+
+#: functions.php:79
+msgid "Primary"
+msgstr ""
+
+#: functions.php:80
+msgid "Footer"
+msgstr ""
+
+#: functions.php:116
+msgid "Blog Sidebar"
+msgstr ""
+
+#: functions.php:127
+msgid "Page Sidebar"
+msgstr ""
+
+#: functions.php:139
+msgid "Coupon Category Sidebar"
+msgstr ""
+
+#: functions.php:141
+msgid "The sidebar will display on coupon category, tag page."
+msgstr ""
+
+#: functions.php:151
+msgid "Store Sidebar"
+msgstr ""
+
+#: functions.php:163
+msgid "WooCommerce Sidebar"
+msgstr ""
+
+#: functions.php:175
+msgid "Footer Left"
+msgstr ""
+
+#: functions.php:186
+msgid "Footer Right"
+msgstr ""
+
+#: functions.php:197
+msgid "Footer Center"
+msgstr ""
+
+#: functions.php:210
+msgid "Frontpage Before Main Content"
+msgstr ""
+
+#: functions.php:212 functions.php:224 functions.php:236
+msgid "This sidebar display on frontpage template"
+msgstr ""
+
+#: functions.php:222
+msgid "Frontpage Main Content"
+msgstr ""
+
+#: functions.php:234
+msgid "Frontpage After Main Content"
+msgstr ""
+
+#: functions.php:281
+msgid "Favorited"
+msgstr ""
+
+#: functions.php:282 sidebar-store.php:13
+msgid "Favorite This Store"
+msgstr "পছন্দনীয় স্টোর"
+
+#: functions.php:283
+msgid "Please login to continue..."
+msgstr "দয়া করে লগ ইন করুন"
+
+#: functions.php:284 loop/coupon-modal.php:69 loop/loop-coupon-cat.php:88
+#: loop/loop-coupon.php:102 single-coupon.php:90
+msgid "Save this coupon"
+msgstr "কুপনটি সেভ করুন"
+
+#: functions.php:285
+msgid "Coupon Saved"
+msgstr "কুপন সেভ আছে"
+
+#: functions.php:286
+msgid "No results..."
+msgstr "কোন তথ্য পাওয়া যায় নাই"
+
+#: functions.php:287
+msgid "Copied"
+msgstr "কপি করা হয়েছে"
+
+#: functions.php:288 loop/coupon-modal.php:50 single-coupon.php:76
+msgid "Copy"
+msgstr "কপি"
+
+#: functions.php:397
+msgid "Deals"
+msgstr ""
+
+#: functions.php:406
+msgid "Deal"
+msgstr ""
+
+#: header.php:60
+msgid "Search stores for coupons, deals ..."
+msgstr "সার্চ করুন স্টোর, কুপন এবং ডিল "
+
+#: header.php:83
+msgid "Top Searches:"
+msgstr ""
+
+#: header.php:132 inc/user/user.php:372
+msgid "Sign Out"
+msgstr "সাইন আঊট"
+
+#: header.php:136 inc/user/user.php:179 inc/user/user.php:366 inc/user/user.php:370
+msgid "Dashboard"
+msgstr "ড্যাশবোর্ড"
+
+#: header.php:137 inc/user/user.php:371
+msgid "Account Settings"
+msgstr "একাউন্ট সেটিংস"
+
+#: header.php:145
+msgid "Sign In"
+msgstr "সাইন ইন"
+
+#: inc/core/coupon.php:585 inc/core/coupon.php:588
+#, php-format
+msgid "Expires %s"
+msgstr "মেয়াদ %s অব্দি"
+
+#: inc/core/coupon.php:590 inc/core/coupon.php:1932 inc/core/store.php:1141
+msgid "Expired"
+msgstr "মেয়াদ উত্তীর্ণ"
+
+#: inc/core/coupon.php:593
+msgid "No Expires"
+msgstr "মেয়াদ আছে"
+
+#: inc/core/coupon.php:733 inc/core/coupon.php:1041
+msgid "Code"
+msgstr ""
+
+#: inc/core/coupon.php:1108 inc/template-tags.php:193
+msgid "Pingback:"
+msgstr ""
+
+#: inc/core/coupon.php:1108 inc/template-tags.php:193
+msgid "(Edit)"
+msgstr ""
+
+#: inc/core/coupon.php:1123 inc/template-tags.php:209
+#, php-format
+msgid " %s ago"
+msgstr " %s পূর্বে"
+
+#: inc/core/coupon.php:1127 inc/template-tags.php:213
+msgid "Your comment is awaiting moderation."
+msgstr ""
+
+#: inc/core/coupon.php:1361 inc/core/coupon.php:1457
+msgid "Coupon Description:"
+msgstr ""
+
+#: inc/core/coupon.php:1363 inc/core/coupon.php:1459
+msgid "Store:"
+msgstr ""
+
+#: inc/core/coupon.php:1367 inc/core/coupon.php:1463
+msgid "Click the link bellow to get deal"
+msgstr ""
+
+#: inc/core/coupon.php:1368 inc/core/coupon.php:1464
+msgid "Get deal now"
+msgstr ""
+
+#: inc/core/coupon.php:1371 inc/core/coupon.php:1467 loop/coupon-modal.php:21
+#: single-coupon.php:47
+msgid "Print this coupon and redeem it in-store"
+msgstr "এই কুপনটি প্রিন্ট করুন এবং এটিকে স্টোরে রিডিম করুন"
+
+#: inc/core/coupon.php:1376 inc/core/coupon.php:1473
+msgid "Copy coupon code and use at checkout:"
+msgstr ""
+
+#: inc/core/coupon.php:1379 inc/core/coupon.php:1477
+msgid "Store website:"
+msgstr ""
+
+#: inc/core/coupon.php:1381 inc/core/coupon.php:1480
+#, php-format
+msgid "This email was sent form %1$s"
+msgstr ""
+
+#: inc/core/coupon.php:1425
+msgid "Print coupon"
+msgstr ""
+
+#: inc/core/coupon.php:1907 inc/core/store.php:1119
+msgid "Sort by"
+msgstr "ক্রমানুসার"
+
+#: inc/core/coupon.php:1911 inc/core/store.php:1123
+msgid "Newest"
+msgstr "নতুনতম"
+
+#: inc/core/coupon.php:1918 inc/core/store.php:1129
+msgid "Popularity"
+msgstr "জনপ্রিয়"
+
+#: inc/core/coupon.php:1925 inc/core/store.php:1135 inc/widgets/coupons.php:102
+msgid "Ending Soon"
+msgstr "মেয়াদ উত্তীর্ণ"
+
+#: inc/core/store.php:413
+msgid "Untitled"
+msgstr ""
+
+#: inc/core/store.php:1079
+msgid "Categories"
+msgstr "ক্যাটাগরি সমূহ"
+
+#: inc/template-tags.php:43
+msgid "&larr; Previous"
+msgstr ""
+
+#: inc/template-tags.php:44
+msgid "Next &rarr;"
+msgstr ""
+
+#: inc/template-tags.php:52
+msgid "Posts navigation"
+msgstr ""
+
+#: inc/template-tags.php:76
+#, php-format
+msgid "Category: %s"
+msgstr "ক্যাটাগরি: %s"
+
+#: inc/template-tags.php:78
+#, php-format
+msgid "Tag: %s"
+msgstr "ট্যাগ: %s"
+
+#: inc/template-tags.php:80
+#, php-format
+msgid "Author: %s"
+msgstr "অথর: %s"
+
+#: inc/template-tags.php:82
+#, php-format
+msgid "Year: %s"
+msgstr "বছর: %s"
+
+#: inc/template-tags.php:84
+#, php-format
+msgid "Month: %s"
+msgstr "মাস: %s"
+
+#: inc/template-tags.php:86
+#, php-format
+msgid "Day: %s"
+msgstr "দিন: %s"
+
+#: inc/template-tags.php:106
+#, php-format
+msgid "Archives: %s"
+msgstr "আরকাইভ: %s"
+
+#: inc/template-tags.php:110
+#, php-format
+msgid "%1$s: %2$s"
+msgstr ""
+
+#: inc/template-tags.php:112
+msgid "Archives"
+msgstr "আরকাইভ সমূহ "
+
+#: inc/template-tags.php:292
+msgid "Share link on Facebook"
+msgstr ""
+
+#: inc/template-tags.php:292
+msgid "Facebook"
+msgstr ""
+
+#: inc/template-tags.php:293
+msgid "Share link on Twitter"
+msgstr ""
+
+#: inc/template-tags.php:293
+msgid "Twitter"
+msgstr ""
+
+#: inc/template-tags.php:294
+msgid "Share image on Pinterest"
+msgstr ""
+
+#: inc/template-tags.php:294
+msgid "Pinterest"
+msgstr ""
+
+#: inc/template-tags.php:444
+msgid "Submit a coupon"
+msgstr "সাবমিট কুপন"
+
+#: inc/template-tags.php:550
+msgid "Oops! That page can&rsquo;t be found."
+msgstr "উফ! সেই পৃষ্ঠাটি খুঁজে পাওয়া যাচ্ছে না।"
+
+#: inc/template-tags.php:557
+#, php-format
+msgid "Search Results for: %s"
+msgstr ""
+
+#: inc/template-tags.php:772
+msgid "&laquo; Previous"
+msgstr ""
+
+#: inc/template-tags.php:773
+msgid "Next &raquo;"
+msgstr ""
+
+#: inc/template-tags.php:853
+msgid "&hellip;"
+msgstr ""
+
+#: inc/template-tags.php:1052 inc/template-tags.php:1061
+msgid "Free Shipping"
+msgstr ""
+
+#: inc/user/user.php:180
+msgid "Saved Coupons"
+msgstr ""
+
+#: inc/user/user.php:181
+msgid "Favorites Stores"
+msgstr ""
+
+#: inc/user/user.php:182
+msgid "Settings"
+msgstr ""
+
+#: inc/user/user.php:184
+msgid "Public profile"
+msgstr ""
+
+#: inc/user/user.php:225
+msgid "Recently Saved Coupons"
+msgstr ""
+
+#: inc/user/user.php:263
+msgid "See all your saved coupons"
+msgstr ""
+
+#: inc/user/user.php:271
+msgid "It's looks like you didn't add any coupons yet."
+msgstr ""
+
+#: inc/user/user.php:277
+msgid "Browse Coupons to add"
+msgstr ""
+
+#: inc/user/user.php:298 inc/user/user.php:643
+msgid "Recent Favorite Stores"
+msgstr ""
+
+#: inc/user/user.php:317
+msgid "See all your favorite stores"
+msgstr ""
+
+#: inc/user/user.php:325
+msgid "It's looks like you didn't add any stores yet."
+msgstr ""
+
+#: inc/user/user.php:332
+msgid "Browse Stores to add"
+msgstr ""
+
+#: inc/user/user.php:366
+msgid "Login / Register"
+msgstr ""
+
+#: inc/user/user.php:366
+msgid "Login"
+msgstr "লগ ইন"
+
+#: inc/user/user.php:386
+msgid "Submit a Coupon"
+msgstr "সাবমিট কুপন "
+
+#: inc/user/user.php:408
+msgid "User Name:"
+msgstr ""
+
+#: inc/user/user.php:415
+msgid "E-mail:"
+msgstr ""
+
+#: inc/user/user.php:424
+msgid "First Name:"
+msgstr ""
+
+#: inc/user/user.php:434
+msgid "Last Name:"
+msgstr ""
+
+#: inc/user/user.php:443
+msgid "Display Name:"
+msgstr ""
+
+#: inc/user/user.php:450
+msgid "Website:"
+msgstr ""
+
+#: inc/user/user.php:458
+msgid "Bio:"
+msgstr ""
+
+#: inc/user/user.php:591 inc/user/user.php:741
+msgid "Best coupons from your Favorite Stores"
+msgstr ""
+
+#: inc/user/user.php:593 inc/user/user.php:617 inc/user/user.php:645
+msgid "View all"
+msgstr ""
+
+#: inc/user/user.php:605
+msgid "No Coupons found! Please add more favorite stores to see this."
+msgstr ""
+
+#: inc/user/user.php:615
+msgid "Recent Saved Coupons"
+msgstr ""
+
+#: inc/user/user.php:631
+msgid "No Coupons found! Please add more see this."
+msgstr ""
+
+#: inc/user/user.php:686
+msgid "No Stores found! Please add more see this."
+msgstr ""
+
+#: inc/user/user.php:704
+msgid "Your Saved Coupons"
+msgstr ""
+
+#: inc/user/user.php:717
+msgid "No saved coupons found ! Please add more."
+msgstr ""
+
+#: inc/user/user.php:754
+msgid "No coupons found ! Please add more favorite store to see this."
+msgstr ""
+
+#: inc/user/user.php:767
+msgid "Favorite Stores"
+msgstr ""
+
+#: inc/user/user.php:808
+msgid "No saved stores found ! Please add more."
+msgstr ""
+
+#: inc/widgets/carousel.php:12
+msgid "WPCoupon Store Carousel"
+msgstr ""
+
+#: inc/widgets/carousel.php:14
+msgid "Display store width Carousel"
+msgstr ""
+
+#: inc/widgets/carousel.php:214 inc/widgets/categories.php:118
+#: inc/widgets/category-grid-view.php:171 inc/widgets/coupons.php:269
+#: inc/widgets/headline.php:32 inc/widgets/newsletter.php:163
+#: inc/widgets/popular-stores.php:138 inc/widgets/slider.php:114
+msgid "Title:"
+msgstr ""
+
+#: inc/widgets/carousel.php:221
+msgid "Featured stores only."
+msgstr ""
+
+#: inc/widgets/carousel.php:225
+msgid "Include:"
+msgstr ""
+
+#: inc/widgets/carousel.php:230
+msgid "Exclude:"
+msgstr ""
+
+#: inc/widgets/carousel.php:235
+msgid "How many stores to display ?"
+msgstr ""
+
+#: inc/widgets/carousel.php:240 inc/widgets/categories.php:152
+#: inc/widgets/category-grid-view.php:176
+msgid "Order by:"
+msgstr ""
+
+#: inc/widgets/carousel.php:244
+msgid "Default"
+msgstr ""
+
+#: inc/widgets/carousel.php:245
+msgid "Number coupons"
+msgstr ""
+
+#: inc/widgets/carousel.php:246 inc/widgets/slider.php:68
+msgid "Title"
+msgstr ""
+
+#: inc/widgets/carousel.php:247
+msgid "Preserve Store ID order given in the inlcude IDs"
+msgstr ""
+
+#: inc/widgets/carousel.php:256 inc/widgets/categories.php:166
+#: inc/widgets/category-grid-view.php:191
+msgid "Order:"
+msgstr ""
+
+#: inc/widgets/carousel.php:260 inc/widgets/categories.php:170
+#: inc/widgets/category-grid-view.php:195 inc/widgets/popular-stores.php:178
+msgid "Desc"
+msgstr ""
+
+#: inc/widgets/carousel.php:261 inc/widgets/categories.php:171
+#: inc/widgets/category-grid-view.php:196 inc/widgets/popular-stores.php:179
+msgid "Asc"
+msgstr ""
+
+#: inc/widgets/carousel.php:273 inc/widgets/slider.php:145
+msgid "Slide speed (millisecond)"
+msgstr ""
+
+#: inc/widgets/carousel.php:278 inc/widgets/slider.php:150
+msgid "Pagination speed (millisecond)"
+msgstr ""
+
+#: inc/widgets/carousel.php:283
+msgid "Number items visible:"
+msgstr ""
+
+#: inc/widgets/carousel.php:293
+msgid "Number items visible on tablet:"
+msgstr ""
+
+#: inc/widgets/carousel.php:303
+msgid "Number items visible on mobile:"
+msgstr ""
+
+#: inc/widgets/carousel.php:314 inc/widgets/slider.php:155
+msgid "Auto play:"
+msgstr ""
+
+#: inc/widgets/carousel.php:318 inc/widgets/carousel.php:332 inc/widgets/coupons.php:303
+#: inc/widgets/slider.php:159 inc/widgets/slider.php:173
+msgid "Yes"
+msgstr ""
+
+#: inc/widgets/carousel.php:319 inc/widgets/slider.php:160 inc/widgets/slider.php:174
+msgid "no"
+msgstr ""
+
+#: inc/widgets/carousel.php:328 inc/widgets/slider.php:169
+msgid "Stop on hover:"
+msgstr ""
+
+#: inc/widgets/carousel.php:333 inc/widgets/coupons.php:302
+msgid "No"
+msgstr ""
+
+#: inc/widgets/categories.php:12
+msgid "WPCoupon Categories"
+msgstr ""
+
+#: inc/widgets/categories.php:14 inc/widgets/category-grid-view.php:14
+msgid "Display any taxonomies as categories list"
+msgstr ""
+
+#: inc/widgets/categories.php:123
+msgid "Taxonomy:"
+msgstr ""
+
+#: inc/widgets/categories.php:132
+msgid "Depth:"
+msgstr ""
+
+#: inc/widgets/categories.php:136
+msgid "All Categories and child Categories"
+msgstr ""
+
+#: inc/widgets/categories.php:137
+msgid "All Categories displayed in flat (no indent) form (overrides hierarchical)"
+msgstr ""
+
+#: inc/widgets/categories.php:138
+msgid "Show only top level Categories"
+msgstr ""
+
+#: inc/widgets/categories.php:139
+msgid ""
+"Value of n (a number) specifies the depth (or level) to descend in displaying "
+"Categories"
+msgstr ""
+
+#: inc/widgets/categories.php:156 inc/widgets/category-grid-view.php:180
+msgid "Count"
+msgstr ""
+
+#: inc/widgets/categories.php:181 inc/widgets/category-grid-view.php:205
+#: inc/widgets/popular-stores.php:142
+msgid "Number store to show:"
+msgstr ""
+
+#: inc/widgets/categories.php:186
+msgid "Show count ?"
+msgstr ""
+
+#: inc/widgets/categories.php:191 inc/widgets/category-grid-view.php:210
+#: inc/widgets/popular-stores.php:154
+msgid "Number item per row:"
+msgstr ""
+
+#: inc/widgets/categories.php:288 inc/widgets/category-grid-view.php:307
+#, php-format
+msgid "Feed for all posts filed under %s"
+msgstr ""
+
+#: inc/widgets/category-grid-view.php:12
+msgid "WPCoupon Categories Grid View"
+msgstr ""
+
+#: inc/widgets/category-grid-view.php:133 templates/category-az.php:97
+msgid "Oops! No categories found"
+msgstr ""
+
+#: inc/widgets/category-grid-view.php:135 templates/category-az.php:99
+#: templates/store-az.php:169
+msgid "You must activate wpcoupons plugin to use this template."
+msgstr ""
+
+#: inc/widgets/category-grid-view.php:182 inc/widgets/popular-stores.php:168
+msgid "Random"
+msgstr ""
+
+#: inc/widgets/coupons.php:12
+msgid "WPCoupon Coupons"
+msgstr ""
+
+#: inc/widgets/coupons.php:14
+msgid "Display Coupons"
+msgstr ""
+
+#: inc/widgets/coupons.php:96
+msgid "Latest Coupons"
+msgstr ""
+
+#: inc/widgets/coupons.php:99
+msgid "Popular Coupons"
+msgstr ""
+
+#: inc/widgets/coupons.php:124 inc/widgets/coupons.php:163 inc/widgets/coupons.php:209
+#: taxonomy-coupon_category.php:60 taxonomy-coupon_store.php:122
+msgid "Oops! No coupons found"
+msgstr "উফ! কোন কুপন পাওয়া যায়নি"
+
+#: inc/widgets/coupons.php:126 inc/widgets/coupons.php:165
+msgid "There is no coupons! Please comeback later."
+msgstr ""
+
+#: inc/widgets/coupons.php:134 inc/widgets/coupons.php:179 inc/widgets/coupons.php:225
+#: taxonomy-coupon_category.php:77 taxonomy-coupon_store.php:108
+#: taxonomy-coupon_tag.php:53
+msgid "Load More Coupons"
+msgstr "কুপন লোড করুন"
+
+#: inc/widgets/coupons.php:211
+msgid "There is no coupons ! Please comeback later."
+msgstr ""
+
+#: inc/widgets/coupons.php:273
+msgid "Number coupons to show:"
+msgstr ""
+
+#: inc/widgets/coupons.php:277
+msgid "Excerpt length:"
+msgstr ""
+
+#: inc/widgets/coupons.php:281
+msgid "Excerpt length if hide thumbnails:"
+msgstr ""
+
+#: inc/widgets/coupons.php:285
+msgid "Box layout:"
+msgstr ""
+
+#: inc/widgets/coupons.php:289 loop/loop-coupon-cat.php:43 loop/loop-coupon.php:52
+msgid "Less"
+msgstr "ছোট করুন"
+
+#: inc/widgets/coupons.php:290
+msgid "Full"
+msgstr ""
+
+#: inc/widgets/coupons.php:298
+msgid "Show paging:"
+msgstr ""
+
+#: inc/widgets/coupons.php:313
+msgid "Do not show expired coupons."
+msgstr ""
+
+#: inc/widgets/coupons.php:319
+msgid "Hide latest coupons tab"
+msgstr ""
+
+#: inc/widgets/coupons.php:323
+msgid "Show popular tab"
+msgstr ""
+
+#: inc/widgets/coupons.php:327
+msgid "Show ending tab"
+msgstr ""
+
+#: inc/widgets/headline.php:12
+#, fuzzy
+#| msgid "Coupon Saved"
+msgid "WPCoupon Headline"
+msgstr "কুপন সেভ আছে"
+
+#: inc/widgets/headline.php:14
+msgid "Display a headline"
+msgstr ""
+
+#: inc/widgets/headline.php:37
+msgid "Heading level"
+msgstr ""
+
+#: inc/widgets/newsletter.php:13
+msgid "WPCoupon Newsletter"
+msgstr ""
+
+#: inc/widgets/newsletter.php:15
+msgid "Display newsletter box"
+msgstr ""
+
+#: inc/widgets/newsletter.php:67
+msgid "Your email"
+msgstr "আপনার ইমেইল"
+
+#: inc/widgets/newsletter.php:69
+msgid "Subscribe"
+msgstr "সাবস্ক্রাইব"
+
+#: inc/widgets/newsletter.php:168
+msgid "Mailchimp action:"
+msgstr ""
+
+#: inc/widgets/newsletter.php:176
+msgid "Before form"
+msgstr ""
+
+#: inc/widgets/newsletter.php:181
+msgid "After form"
+msgstr ""
+
+#: inc/widgets/newsletter.php:186
+msgid "facebook URL:"
+msgstr ""
+
+#: inc/widgets/newsletter.php:190
+msgid "twitter URL:"
+msgstr ""
+
+#: inc/widgets/newsletter.php:194
+msgid "linkedin URL:"
+msgstr ""
+
+#: inc/widgets/newsletter.php:198
+msgid "google URL:"
+msgstr ""
+
+#: inc/widgets/newsletter.php:202
+msgid "flickr URL:"
+msgstr ""
+
+#: inc/widgets/newsletter.php:206
+msgid "youtube URL:"
+msgstr ""
+
+#: inc/widgets/newsletter.php:210
+msgid "Instagram URL:"
+msgstr ""
+
+#: inc/widgets/newsletter.php:214
+msgid "Pinterest URL:"
+msgstr ""
+
+#: inc/widgets/newsletter.php:220
+msgid "Social link target"
+msgstr ""
+
+#: inc/widgets/newsletter.php:222
+msgid "_blank"
+msgstr ""
+
+#: inc/widgets/newsletter.php:223
+msgid "_self"
+msgstr ""
+
+#: inc/widgets/newsletter.php:224
+msgid "_parent"
+msgstr ""
+
+#: inc/widgets/newsletter.php:225
+msgid "_top"
+msgstr ""
+
+#: inc/widgets/popular-stores.php:30
+#, fuzzy
+#| msgid "Coupon Saved"
+msgid "WPCoupon Stores"
+msgstr "কুপন সেভ আছে"
+
+#: inc/widgets/popular-stores.php:31
+msgid "Display Stores"
+msgstr ""
+
+#: inc/widgets/popular-stores.php:146
+msgid "Comma-separated of term ids to include:"
+msgstr ""
+
+#: inc/widgets/popular-stores.php:150
+msgid "Comma-separated of term ids to exclude:"
+msgstr ""
+
+#: inc/widgets/popular-stores.php:163
+msgid "Order by"
+msgstr ""
+
+#: inc/widgets/popular-stores.php:167
+msgid "Number Coupons"
+msgstr ""
+
+#: inc/widgets/popular-stores.php:175
+msgid "Order"
+msgstr ""
+
+#: inc/widgets/sidebar.php:12
+#, fuzzy
+#| msgid "Coupon Saved"
+msgid "WPCoupon Sidebar"
+msgstr "কুপন সেভ আছে"
+
+#: inc/widgets/sidebar.php:14
+msgid "Display a Sidebar"
+msgstr ""
+
+#: inc/widgets/sidebar.php:39
+msgid "Sidebar"
+msgstr ""
+
+#: inc/widgets/slider.php:12
+#, fuzzy
+#| msgid "Coupon Saved"
+msgid "WPCoupon Slider"
+msgstr "কুপন সেভ আছে"
+
+#: inc/widgets/slider.php:14
+msgid "Display a Slider"
+msgstr ""
+
+#: inc/widgets/slider.php:62 inc/widgets/slider.php:85
+msgid "Remove"
+msgstr ""
+
+#: inc/widgets/slider.php:73
+msgid "Description"
+msgstr ""
+
+#: inc/widgets/slider.php:78
+msgid "URL"
+msgstr ""
+
+#: inc/widgets/slider.php:85
+msgid "Close"
+msgstr ""
+
+#: inc/widgets/slider.php:126
+msgid "Add item"
+msgstr ""
+
+#: loop/coupon-meta.php:10 loop/coupon-modal.php:104 single-coupon.php:121
+#, php-format
+msgid "%1$s Used - %2$s Today"
+msgstr "%1$s ব্যবহৃত - %2$s আজ"
+
+#: loop/coupon-meta.php:14
+msgid "Share it with your friend"
+msgstr ""
+
+#: loop/coupon-meta.php:14 loop/coupon-modal.php:106 single-coupon.php:123
+msgid "Share"
+msgstr "শেয়ার"
+
+#: loop/coupon-meta.php:15 loop/coupon-meta.php:53
+msgid "Send this coupon to an email"
+msgstr ""
+
+#: loop/coupon-meta.php:21
+msgid "Coupon Comments"
+msgstr "কুপন মন্তব্যসমূহ"
+
+#: loop/coupon-meta.php:30
+msgid "Share it with your friends"
+msgstr ""
+
+#: loop/coupon-meta.php:55
+msgid "Email address ..."
+msgstr ""
+
+#: loop/coupon-meta.php:57
+msgid "Send"
+msgstr ""
+
+#: loop/coupon-meta.php:59
+msgid ""
+"This is not a email subscription service. Your email (or your friend's email) will "
+"only be used to send this coupon."
+msgstr ""
+
+#: loop/coupon-meta.php:64
+msgid "Showing most recent comments"
+msgstr "সবচেয়ে সাম্প্রতিক মন্তব্যসমূহ"
+
+#: loop/coupon-meta.php:67
+msgid "Loading comments...."
+msgstr ""
+
+#: loop/coupon-meta.php:73
+msgid "Let others know how much you saved"
+msgstr "আপনি কতটা সংরক্ষণ করেছেন তা অন্যদের জানাতে দিন"
+
+#: loop/coupon-meta.php:77
+msgid "Your comment submitted."
+msgstr "আপনার মন্তব্য জমা দেওয়া হয়েছে"
+
+#: loop/coupon-meta.php:81
+msgid "Something wrong! Please try again later."
+msgstr ""
+
+#: loop/coupon-meta.php:86
+msgid "Add a comment"
+msgstr "নতুন মন্তব্য করুন"
+
+#: loop/coupon-meta.php:91
+msgid "Your Name"
+msgstr ""
+
+#: loop/coupon-meta.php:94
+msgid "Your Email"
+msgstr ""
+
+#: loop/coupon-meta.php:98
+msgid "Submit"
+msgstr "সাবমিট করুন"
+
+#: loop/coupon-modal.php:18 single-coupon.php:44
+msgid "Deal Activated, no coupon code required!"
+msgstr "ডিল সক্রিয় করা হয়েছে, কোন কুপন কোডের প্রয়োজন নেই!"
+
+#: loop/coupon-modal.php:24 single-coupon.php:50
+msgid "Copy this code and use at checkout"
+msgstr "এই কোডটি কপি করুন এবং চেকআউটে ব্যবহার করুন"
+
+#: loop/coupon-modal.php:34 loop/coupon-modal.php:84 single-coupon.php:60
+#: single-coupon.php:101
+msgid "Go To Store"
+msgstr "ষ্টোর উন্মোচন করুন"
+
+#: loop/coupon-modal.php:67 loop/loop-coupon.php:100 single-coupon.php:88
+msgid "This worked"
+msgstr ""
+
+#: loop/coupon-modal.php:68 loop/loop-coupon.php:101 single-coupon.php:89
+msgid "It didn't work"
+msgstr ""
+
+#: loop/coupon-modal.php:71 single-coupon.php:92
+msgid "Did it work?"
+msgstr ""
+
+#: loop/coupon-modal.php:82 single-coupon.php:99
+msgid "Print Now"
+msgstr "প্রিন্ট করুন"
+
+#: loop/coupon-modal.php:88 single-coupon.php:105
+msgid "Coupon Detail"
+msgstr "কুপনের বিবরন"
+
+#: loop/coupon-modal.php:96 single-coupon.php:113
+msgid "Expires"
+msgstr ""
+
+#: loop/coupon-modal.php:97 single-coupon.php:114
+msgid "Submitted"
+msgstr "জমা দেওয়া হয়েছে"
+
+#: loop/coupon-modal.php:98 single-coupon.php:115
+#, php-format
+msgid "%s ago"
+msgstr "%s পূর্বে"
+
+#: loop/loop-coupon-cat.php:10
+#, php-format
+msgid "%s Coupons"
+msgstr "%s মন্তব্যসমূহ"
+
+#: loop/loop-coupon-cat.php:29 loop/loop-coupon.php:38
+msgid "coupon_des_sm_enable"
+msgstr ""
+
+#: loop/loop-coupon-cat.php:35 loop/loop-coupon.php:44
+msgid "More"
+msgstr "বিস্তারিত"
+
+#: loop/loop-coupon-cat.php:52 loop/loop-coupon.php:62
+msgid "coupon_button_sm_sec"
+msgstr ""
+
+#: loop/loop-coupon-cat.php:73 loop/loop-coupon.php:82
+msgid "Click to copy & open site"
+msgstr "কপি করুন এবং সাইট ওপেন করুন"
+
+#: loop/loop-coupon.php:104
+#, php-format
+msgid "%s%% Success"
+msgstr ""
+
+#: loop/loop.php:31 loop/loop.php:32 single.php:56 single.php:57
+#, php-format
+msgid "Posts by %s"
+msgstr "পোস্ট করেছেন %s"
+
+#: loop/loop.php:39 single.php:63
+msgid "0 Comments"
+msgstr "0  কমেন্টস"
+
+#: loop/loop.php:40 single.php:64
+msgid "1 Comment"
+msgstr "১ কমেন্টস"
+
+#: loop/loop.php:41 single.php:65
+msgid "% Comments"
+msgstr "% কমেন্টস"
+
+#: loop/loop.php:54
+msgid "Read More"
+msgstr "বিস্তারিত পড়ুন"
+
+#: sidebar-store.php:4 taxonomy-coupon_store.php:31
+msgid "Shop "
+msgstr ""
+
+#: sidebar-store.php:34 taxonomy-coupon_category.php:138
+msgid "+"
+msgstr ""
+
+#: sidebar-store.php:36 taxonomy-coupon_category.php:140
+msgid "COUPONS AVAILABLE"
+msgstr "কুপন উপলব্ধ"
+
+#: sidebar-store.php:42
+msgid "About"
+msgstr "বিবরণ"
+
+#: single-coupon.php:159
+msgid "Most popular {store} coupons."
+msgstr ""
+
+#: single-coupon.php:230
+msgid "Tags:"
+msgstr ""
+
+#: taxonomy-coupon_category.php:14
+msgid "Newest %coupon_cate% Coupons"
+msgstr ""
+
+#: taxonomy-coupon_category.php:62 taxonomy-coupon_store.php:124
+msgid "There are no coupons for this store, please come back later."
+msgstr "এই স্টোরের জন্য কোন কুপন নেই, অনুগ্রহ করে পরে ফিরে আসুন।"
+
+#: templates/store-az.php:81
+msgid "0-9"
+msgstr "০-১০"
+
+#: templates/store-az.php:167
+msgid "Oops! No stores found"
+msgstr "উফ! কোন স্টোর পাওয়া যায়নি"
+
+#, fuzzy
+#~| msgid "Submit a Coupon"
+#~ msgid "Edit Coupon"
+#~ msgstr "সাবমিট কুপন "
+
+#, fuzzy
+#~| msgid "Submit a Coupon"
+#~ msgid "View Coupon"
+#~ msgstr "সাবমিট কুপন "
+
+#, fuzzy
+#~| msgid "Coupon Saved"
+#~ msgid "Coupon attributes"
+#~ msgstr "কুপন সেভ আছে"
+
+#~ msgid "Filter store"
+#~ msgstr "ফিল্টার স্টোর"
+
+#, fuzzy
+#~| msgid "Coupon Saved"
+#~ msgid "Coupon"
+#~ msgstr "কুপন সেভ আছে"
+
+#, fuzzy, php-format
+#~| msgid "No Expires"
+#~ msgid "Expires %s."
+#~ msgstr "মেয়াদ আছে"
+
+#, fuzzy
+#~| msgid "Coupon Saved"
+#~ msgid "Coupon code"
+#~ msgstr "কুপন সেভ আছে"
+
+#, fuzzy
+#~| msgid "Coupon Saved"
+#~ msgid "Coupon sale"
+#~ msgstr "কুপন সেভ আছে"
+
+#, fuzzy
+#~| msgid "Coupon Saved"
+#~ msgid "Coupon Store template"
+#~ msgstr "কুপন সেভ আছে"
+
+#, fuzzy
+#~| msgid "Coupon Saved"
+#~ msgid "Coupon Category"
+#~ msgstr "কুপন সেভ আছে"
+
+#, fuzzy
+#~| msgid "Coupon Saved"
+#~ msgid "Coupon Filter"
+#~ msgstr "কুপন সেভ আছে"
+
+#, fuzzy
+#~| msgid "Account Settings"
+#~ msgid "Coupon Settings"
+#~ msgstr "একাউন্ট সেটিংস"
+
+#, fuzzy
+#~| msgid "Coupon Saved"
+#~ msgid "Coupon Type"
+#~ msgstr "কুপন সেভ আছে"
+
+#, fuzzy
+#~| msgid "Coupon Saved"
+#~ msgid "Coupon Code"
+#~ msgstr "কুপন সেভ আছে"
+
+#, fuzzy
+#~| msgid "Coupon Saved"
+#~ msgid "Coupon URL"
+#~ msgstr "কুপন সেভ আছে"
+
+#, fuzzy
+#~| msgid "Submit a Coupon"
+#~ msgid "Number Coupon Used"
+#~ msgstr "Submit a couponsdfdsf"
+
+#, fuzzy
+#~| msgid "Account Settings"
+#~ msgid "Page Settings"
+#~ msgstr "একাউন্ট সেটিংস"

@@ -1,0 +1,19 @@
+# Environment-specific / secrets — staging keeps its own wp-config.php
+/wp-config.php
+
+# Media library — too large for git, not code; sync separately if needed
+/wp-content/uploads/
+
+# Generated/runtime artifacts — never belong in version control
+/wp-content/cache/
+/wp-content/litespeed/
+/wp-content/upgrade/
+/wp-content/upgrade-temp-backup/
+/wp-content/logs/
+/wp-content/ai1wm-backups/
+/wp-content/backup-migration-*/
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+*.log

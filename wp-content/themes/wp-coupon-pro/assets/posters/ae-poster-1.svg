@@ -1,0 +1,16 @@
+<svg viewBox="0 0 1200 400" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="g1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#cc581a"/>
+      <stop offset="100%" stop-color="#7a2f0e"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="400" fill="url(#g1)"/>
+  <rect x="0" y="0" width="18" height="400" fill="#00732f"/>
+  <rect x="18" y="0" width="18" height="400" fill="#ffffff"/>
+  <rect x="36" y="0" width="18" height="400" fill="#000000"/>
+  <text x="100" y="160" font-family="Arial, sans-serif" font-size="56" font-weight="800" fill="#ffffff">UAE Launch Sale</text>
+  <text x="100" y="225" font-family="Arial, sans-serif" font-size="32" font-weight="600" fill="#ffe8d9">Save big on Noon, Namshi &amp; more</text>
+  <rect x="100" y="270" width="230" height="60" rx="30" fill="#ffffff"/>
+  <text x="215" y="308" font-family="Arial, sans-serif" font-size="26" font-weight="700" fill="#a8461a" text-anchor="middle">Shop Now</text>
+</svg>
