@@ -15,6 +15,80 @@
  */
 
 /**
+ * Path-prefix country routing (offercarnival.com/ae/...) — SEO needs a
+ * real, crawlable, indexable URL per country; a cookie-only switch is
+ * invisible to a crawler, so Google only ever sees whichever country
+ * happens to be the default. Runs as plain top-level code (this file
+ * loads during setup_theme, well before WP parses the request) rather
+ * than a hook, because it has to rewrite REQUEST_URI *before* WP's own
+ * rewrite-rule matching ever runs — every existing rewrite rule (store/
+ * coupon/category archives, pagination, etc.) then keeps working
+ * completely unchanged against whatever's left after the "/ae" prefix is
+ * stripped, with no new rewrite rules to add or flush.
+ *
+ * Only ever matches a path that is exactly "/ae" or starts with "/ae/" —
+ * never wp-admin, never a hypothetical real page slug that merely starts
+ * with "ae" (e.g. "/aero/").
+ */
+$wpc_request_path = parse_url( $_SERVER['REQUEST_URI'], PHP_URL_PATH );
+$wpc_is_ae_path    = $wpc_request_path && preg_match( '#^/ae(/|$)#', $wpc_request_path );
+
+if ( $wpc_is_ae_path ) {
+	define( 'WPC_URL_COUNTRY', 'ae' );
+
+	$wpc_stripped_path = substr( $wpc_request_path, 3 ); // drop the leading "/ae"
+	if ( '' === $wpc_stripped_path ) {
+		$wpc_stripped_path = '/';
+	}
+	$_SERVER['REQUEST_URI'] = $wpc_stripped_path . substr( $_SERVER['REQUEST_URI'], strlen( $wpc_request_path ) );
+}
+
+/**
+ * Keeps the wpc_country cookie mirroring the URL's own country rather than
+ * the other way around: the point of the prefix is that the bare domain
+ * always renders India and "/ae" always renders UAE for *every* visitor,
+ * including a crawler with no cookie at all — a stale cookie must never be
+ * able to override that on a bare URL, or the SEO ambiguity this is meant
+ * to fix comes right back. The cookie's only remaining job is letting
+ * admin-ajax.php requests (built with admin_url(), which never carries the
+ * "/ae" prefix no matter which page triggered them — see
+ * wpcoupon_get_current_country() below) still resolve to whichever country
+ * the *page* that triggered them was actually on. Reset on every request
+ * rather than left to persist, so visiting a bare page after an "/ae" one
+ * doesn't leave that bare page's own AJAX calls still thinking they're UAE.
+ */
+if ( ! headers_sent() ) {
+	$wpc_cookie_target = $wpc_is_ae_path ? 'ae' : 'in';
+	if ( ( isset( $_COOKIE['wpc_country'] ) ? $_COOKIE['wpc_country'] : '' ) !== $wpc_cookie_target ) {
+		setcookie( 'wpc_country', $wpc_cookie_target, time() + DAY_IN_SECONDS, COOKIEPATH ? COOKIEPATH : '/', COOKIE_DOMAIN );
+		$_COOKIE['wpc_country'] = $wpc_cookie_target;
+	}
+}
+
+/**
+ * Every internal link built on home_url() — permalinks, term links,
+ * pagination, etc., which covers most of WordPress's own linking API —
+ * comes back out prefixed with "/ae" again for the rest of this request,
+ * so navigating a UAE page keeps you on UAE pages instead of silently
+ * dropping the prefix on the next click. wp-admin's own links use
+ * site_url()/admin_url(), not home_url(), so this never touches them.
+ *
+ * redirect_canonical() is disabled for the same requests: it independently
+ * rebuilds what it thinks the "correct" URL for the resolved page is
+ * (itself via home_url()) and 301s there if that disagrees with the
+ * now-stripped REQUEST_URI — i.e. it would see "/" vs. this filter's own
+ * "/ae/" and redirect right back to "/ae/", forever. Safe to drop entirely
+ * here: the "/ae" stripping above already *is* the canonical resolution
+ * for these requests, there's nothing left for WordPress to correct.
+ */
+if ( defined( 'WPC_URL_COUNTRY' ) ) {
+	add_filter( 'home_url', function ( $url ) {
+		return preg_replace( '#^(https?://[^/]+)#', '$1/ae', $url, 1 );
+	} );
+	add_filter( 'redirect_canonical', '__return_false' );
+}
+
+/**
  * Get all registered countries (wpc_country terms).
  *
  * @param array $args get_terms() args override.
@@ -140,12 +214,15 @@ function wpcoupon_get_country_flag_url( $term ) {
 /**
  * Get the visitor's currently active country slug.
  *
- * Read-only, request-scoped (a switch takes effect via
- * wpcoupon_handle_country_switch() below, which redirects before this is
- * ever called for that request). Falls back to the default country
- * whenever there's no cookie, an invalid one, or a plain page load — so
- * this is a pure addition: no existing code path is affected unless it
- * explicitly calls this function.
+ * The URL always wins when a "/ae" prefix is present (WPC_URL_COUNTRY, set
+ * at the top of this file) — that's what makes the bare domain and "/ae"
+ * each render consistently for every visitor, crawler included. The one
+ * exception is an admin-ajax.php request: those are built with
+ * admin_url(), which never carries the "/ae" prefix no matter which page
+ * triggered them, so the wpc_country cookie (kept in sync with the URL at
+ * the top of this file) is the only way a "load more coupons" click on an
+ * "/ae" page can still know it's in UAE context. Anything else — a bare
+ * page load with no prefix, regardless of cookie — is the default country.
  *
  * @return string country term slug, e.g. 'in' or 'ae'
  */
@@ -156,42 +233,31 @@ function wpcoupon_get_current_country() {
 		return $current;
 	}
 
-	$default = wpcoupon_get_default_country();
-	$cookie  = isset( $_COOKIE['wpc_country'] ) ? sanitize_key( wp_unslash( $_COOKIE['wpc_country'] ) ) : '';
-
-	if ( ! $cookie ) {
-		$current = $default;
+	if ( defined( 'WPC_URL_COUNTRY' ) ) {
+		$current = WPC_URL_COUNTRY;
 		return $current;
 	}
 
-	// wpc_country registers on `init` at the theme's default priority, but
-	// widgets_init (and anything else that fires earlier) can call this
-	// function before that — e.g. wpcoupon_sidebar_desc() reading a theme
-	// option, which through the option_st_options filter below ends up
-	// calling wpcoupon_get_current_language() -> this function, during
-	// widgets_init. At that point get_terms() for a not-yet-registered
-	// taxonomy comes back empty, and the static cache above would then
-	// permanently lock in the wrong (default) answer for the entire rest
-	// of the request. Skip caching until the taxonomy actually exists, so
-	// an early call gets a same-request best-effort answer without
-	// poisoning every later, correctly-timed call.
-	if ( ! taxonomy_exists( 'wpc_country' ) ) {
-		return $cookie;
+	if ( wp_doing_ajax() && taxonomy_exists( 'wpc_country' ) ) {
+		$cookie = isset( $_COOKIE['wpc_country'] ) ? sanitize_key( wp_unslash( $_COOKIE['wpc_country'] ) ) : '';
+		$valid_slugs = wp_list_pluck( wpcoupon_get_countries(), 'slug' );
+		if ( $cookie && in_array( $cookie, $valid_slugs, true ) ) {
+			$current = $cookie;
+			return $current;
+		}
 	}
 
-	$valid_slugs = wp_list_pluck( wpcoupon_get_countries(), 'slug' );
-	$current     = in_array( $cookie, $valid_slugs, true ) ? $cookie : $default;
-
+	$current = wpcoupon_get_default_country();
 	return $current;
 }
 
 /**
- * Handle a country-switch link (?wpc_country=ae): validate, cookie it,
- * then redirect to the clean URL so no page ever renders with the query
- * arg in it (avoids polluting caches/analytics with it).
- *
- * No-ops on every request that doesn't carry the query arg, i.e. on
- * literally every request today until the switcher UI links to it.
+ * Legacy-link compat: the switcher itself now links straight to "/ae/..."
+ * (a real URL — see wpcoupon_country_switcher() below), but an old
+ * bookmarked or shared "?wpc_country=ae" link should still land somewhere
+ * correct rather than 404 or silently do nothing. Sends it to that
+ * country's homepage (the cookie gets set correctly on that next request
+ * by the top-of-file logic — no need to set it here too).
  */
 function wpcoupon_handle_country_switch() {
 	if ( empty( $_GET['wpc_country'] ) ) {
@@ -205,9 +271,8 @@ function wpcoupon_handle_country_switch() {
 		return;
 	}
 
-	setcookie( 'wpc_country', $slug, time() + ( 180 * DAY_IN_SECONDS ), COOKIEPATH ? COOKIEPATH : '/', COOKIE_DOMAIN );
-
-	wp_safe_redirect( remove_query_arg( 'wpc_country' ) );
+	$default = wpcoupon_get_default_country();
+	wp_safe_redirect( $slug === $default ? home_url( '/' ) : home_url( '/' . $slug . '/' ) );
 	exit;
 }
 add_action( 'init', 'wpcoupon_handle_country_switch' );
@@ -320,9 +385,19 @@ function wpcoupon_country_switcher() {
 			<span class="wpc-country-switcher__caret" aria-hidden="true">&#9662;</span>
 		</button>
 		<div class="wpc-country-switcher__menu">
-			<?php foreach ( $countries as $term ) :
+			<?php
+			// Built from get_option('home') directly rather than home_url() —
+			// home_url() is filtered (above) to prepend "/ae" when the
+			// *current* request is already under that prefix, and building an
+			// "/ae" link by concatenating onto an already-"/ae"-prefixed
+			// home_url() would double it up into "/ae/ae/...". Using the raw,
+			// unfiltered site root sidesteps that: both links below are built
+			// explicitly, from the same starting point.
+			$wpc_site_root     = untrailingslashit( get_option( 'home' ) );
+			$wpc_current_path  = parse_url( $_SERVER['REQUEST_URI'], PHP_URL_PATH );
+			foreach ( $countries as $term ) :
 				$flag = wpcoupon_get_country_flag_url( $term );
-				$url  = esc_url( add_query_arg( 'wpc_country', $term->slug ) );
+				$url  = esc_url( $wpc_site_root . ( $term->slug === wpcoupon_get_default_country() ? '' : '/' . $term->slug ) . $wpc_current_path );
 				?>
 				<a class="wpc-country-switcher__item<?php echo ( $term->slug === $current_slug ) ? ' is-active' : ''; ?>" href="<?php echo $url; ?>" title="<?php echo esc_attr( $term->name ); ?>">
 					<?php if ( $flag ) : ?>
