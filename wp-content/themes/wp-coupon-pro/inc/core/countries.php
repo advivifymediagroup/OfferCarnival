@@ -1215,3 +1215,46 @@ function wpcoupon_filter_stores_by_country( $args, $taxonomies ) {
 	return $args;
 }
 add_filter( 'get_terms_args', 'wpcoupon_filter_stores_by_country', 20, 2 );
+
+/**
+ * Rank Math sitemap: give AE-only coupons/stores their real "/ae/..." URL
+ * instead of the bare one sitemap generation would otherwise produce.
+ * get_permalink()/get_term_link() never see the "/ae" prefix on their own
+ * here — sitemap.xml is always requested as a bare URL, so WPC_URL_COUNTRY
+ * is never defined (the home_url filter earlier in this file only fires
+ * when it is) — so this has to add the prefix itself, the same way that
+ * filter does.
+ *
+ * Only ever touches a coupon/store tagged for AE and NOT also for the
+ * default country — India's entries (and anything dual-tagged) are
+ * completely untouched, same fallback convention as the content filters
+ * above: no country meta at all is treated as India, never prefixed.
+ */
+add_filter( 'rank_math/sitemap/xml_post_url', function ( $url, $post ) {
+	if ( 'coupon' !== $post->post_type ) {
+		return $url;
+	}
+
+	$countries = wp_get_post_terms( $post->ID, 'wpc_country', array( 'fields' => 'slugs' ) );
+
+	if ( in_array( 'ae', $countries, true ) && ! in_array( wpcoupon_get_default_country(), $countries, true ) ) {
+		$url = preg_replace( '#^(https?://[^/]+)#', '$1/ae', $url, 1 );
+	}
+
+	return $url;
+}, 10, 2 );
+
+add_filter( 'rank_math/sitemap/entry', function ( $url, $type, $object ) {
+	if ( 'term' !== $type || empty( $object->taxonomy ) || 'coupon_store' !== $object->taxonomy || empty( $url['loc'] ) ) {
+		return $url;
+	}
+
+	$countries = get_term_meta( $object->term_id, '_wpc_store_countries', true );
+	$countries = is_array( $countries ) ? $countries : array();
+
+	if ( in_array( 'ae', $countries, true ) && ! in_array( wpcoupon_get_default_country(), $countries, true ) ) {
+		$url['loc'] = preg_replace( '#^(https?://[^/]+)#', '$1/ae', $url['loc'], 1 );
+	}
+
+	return $url;
+}, 10, 3 );
