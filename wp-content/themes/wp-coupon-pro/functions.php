@@ -511,6 +511,11 @@ require_once get_template_directory() . '/inc/core/store.php';
  */
 require_once get_template_directory() . '/inc/core/countries.php';
 
+/**
+ * REST API for the browser extension.
+ */
+require_once get_template_directory() . '/inc/core/extension-api.php';
+
 
 /**
  * Coupon functions.
