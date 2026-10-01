@@ -221,59 +221,6 @@
     margin-bottom: 20px;
 }
 
-/* Language toggle (English / Arabic) — only ever rendered for a country
-   that has more than one language option (today, only UAE). Sits under the
-   country dropdown's flag list as a compact pair of text links. */
-.wpc-country-switcher__lang {
-    display: flex;
-    gap: 10px;
-    justify-content: center;
-    margin-top: 12px;
-    padding-top: 12px;
-    border-top: 1px solid #eee;
-}
-.wpc-country-switcher__lang-item {
-    font-size: 12px;
-    font-weight: 600;
-    color: #666;
-    padding: 4px 10px;
-    border-radius: 20px;
-}
-.wpc-country-switcher__lang-item:hover {
-    background: rgba(0, 0, 0, 0.05);
-}
-.wpc-country-switcher__lang-item.is-active {
-    background: #cc581a;
-    color: #fff;
-}
-
-/* Bilingual content utility — any widget's own HTML can hold both an
-   English and an Arabic version of the same text, wrapped in these two
-   classes; only the one matching the visitor's current language (the
-   "lang-en"/"lang-ar" class wpcoupon_get_current_language() adds to <body>,
-   see inc/core/countries.php) is shown. This is the self-serve way to add
-   bilingual copy to a widget without any code change. */
-body.lang-en .i18n-ar {
-    display: none;
-}
-body.lang-ar .i18n-en {
-    display: none;
-}
-/* Arabic is RTL — flip the two widgets this powers today (hero banner, its
-   flag accent stripe) so they read naturally right-to-left instead of just
-   mirroring the English layout's text direction. */
-body.lang-ar .wpc-ae-hero-banner {
-    direction: rtl;
-    text-align: right;
-}
-body.lang-ar .wpc-ae-hero-banner::before {
-    left: auto;
-    right: 0;
-}
-body.lang-ar .wpc-ae-hero-banner {
-    padding: 22px 40px 22px 28px;
-}
-
 /* Categories page (/categories/, templates/category-az.php) — the theme's
    own ".cate-az .category-name img" rule renders the uploaded photo at a
    bare 2em (~32px) with no object-fit, so real photos (as opposed to the
@@ -303,32 +250,3 @@ body.lang-ar .wpc-ae-hero-banner {
     align-items: center;
 }
 
-/* India's Elementor homepage slider ("Home Page Slider", post 10509) —
-   its own custom CSS positions the prev/next arrows with a single fixed
-   side each (".elementor-swiper-button-prev { left: -20px }" / "-next
-   { right: -20px }"), written with no RTL case in mind since India has
-   always been LTR-only. Elementor's own swiper JS also sets an inline
-   left/right/width on these buttons at runtime to center them vertically;
-   in RTL that inline calculation comes out with both left AND right
-   pinned to real pixel values and no explicit width, which makes the
-   browser stretch the button to fill the entire gap between them —
-   exactly the huge white "eye" shape stretching across the UAE Arabic
-   slider. This doesn't touch the Elementor template itself (its content
-   and custom CSS are untouched, and this still applies to every use of
-   the ".hp-slider" class) — it just forces the buttons back to their
-   intended fixed size, mirrored for RTL, in every place they'd otherwise
-   be overridden: our own CSS, Elementor's base CSS, and its inline JS
-   style all specify these three properties, so this needs !important to
-   consistently win over whichever of those set most recently. */
-body.rtl .hp-slider .elementor-swiper-button {
-    width: 26px !important;
-    height: 26px !important;
-}
-body.rtl .hp-slider .elementor-swiper-button-prev {
-    left: auto !important;
-    right: -8px !important;
-}
-body.rtl .hp-slider .elementor-swiper-button-next {
-    left: -8px !important;
-    right: auto !important;
-}

@@ -283,9 +283,7 @@ function wpcoupon_widgets_init() {
 	// two frontpage regions, but deliberately left with no widgets assigned:
 	// this section's content (blog guides, featured-store spotlight, FAQ)
 	// isn't India-specific data the way coupon IDs or store lists are, so
-	// it's made bilingual in place instead (the same shared blocks, with
-	// English/Arabic text pairs — see custom-style.css's ".i18n-en"/
-	// ".i18n-ar" toggle) rather than forked into a second copy. Because
+	// it's just shared as-is rather than forked into a second copy. Because
 	// is_active_sidebar() is false for an empty sidebar,
 	// wpcoupon_get_country_sidebar_id() automatically falls back to
 	// rendering the shared 'frontpage-after-main' sidebar for UAE too — this

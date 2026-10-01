@@ -201,53 +201,6 @@ function wpcoupon_coupon_meta_boxes() {
 
 
 }
-add_action( 'cmb2_init', 'wpcoupon_coupon_arabic_meta_box' );
-
-/**
- * Arabic title/description for this coupon — a separate box (rather than
- * fields inside "Coupon Settings" above) so it's easy to find and skip.
- * Both are optional: leave either blank and that piece just keeps showing
- * in English for every visitor, Arabic included — the same fallback the 20
- * UAE stores added this round rely on. Read by:
- * - wpcoupon_get_current_language()'s `the_title` filter (title)
- * - the `the_posts` filter (description, replacing post_content) in
- *   inc/core/countries.php
- * Store names are intentionally not given the same treatment — they're
- * brand names, not translatable copy.
- */
-function wpcoupon_coupon_arabic_meta_box() {
-    $prefix = '_wpc_';
-
-    $coupon_ar_meta = new_cmb2_box( array(
-        'id'            => $prefix . 'coupon_arabic',
-        'title'         => esc_html__( 'Arabic Title & Description (UAE)', 'wp-coupon-pro' ),
-        'object_types'  => array( 'coupon' ),
-        'context'       => 'normal',
-        'priority'      => 'high',
-    ) );
-
-    $coupon_ar_meta->add_field( array(
-        'name'          => esc_html__( 'Arabic Title', 'wp-coupon-pro' ),
-        'desc'          => esc_html__( 'Shown instead of the title above, only to visitors who have switched the site to Arabic. Leave blank to keep showing the English title in Arabic too.', 'wp-coupon-pro' ),
-        'id'            => $prefix . 'title_ar',
-        'type'          => 'text',
-        'attributes'    => array(
-            'dir'           => 'rtl',
-            'placeholder'   => esc_html__( 'e.g. خصم 25% على أول طلب', 'wp-coupon-pro' ),
-        ),
-    ) );
-
-    $coupon_ar_meta->add_field( array(
-        'name'          => esc_html__( 'Arabic Description', 'wp-coupon-pro' ),
-        'desc'          => esc_html__( 'Shown instead of the coupon description/body, only to visitors who have switched the site to Arabic. Leave blank to keep showing the English description in Arabic too. Plain text only — no HTML needed here.', 'wp-coupon-pro' ),
-        'id'            => $prefix . 'desc_ar',
-        'type'          => 'textarea',
-        'attributes'    => array(
-            'dir'   => 'rtl',
-            'rows'  => 4,
-        ),
-    ) );
-}
 
 /**
  * Add meta box for pages
