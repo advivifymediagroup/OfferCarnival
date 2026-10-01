@@ -836,8 +836,12 @@ class WPCoupon_Coupon {
                 return add_query_arg( array( 'coupon_id' => $this->ID ), untrailingslashit( $coupon_url ) );
             }
         } else {
+            $store_url = $this->get_store_url();
+            if ( ! $store_url ) {
+                return add_query_arg( array( 'coupon_id' => $this->ID ), home_url( '/' ) );
+            }
             if ( $wp_rewrite->using_permalinks() ) {
-                return trailingslashit( $this->get_store_url() . $this->post->post_name );
+                return trailingslashit( $store_url . $this->post->post_name );
             } else {
                 return get_permalink( $this->post );
             }

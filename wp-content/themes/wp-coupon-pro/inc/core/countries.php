@@ -1172,7 +1172,11 @@ function wpcoupon_filter_stores_by_country( $args, $taxonomies ) {
 
 	$is_single_include = ! empty( $args['include'] ) && 1 === count( (array) $args['include'] );
 
-	if ( ! empty( $args['slug'] ) || ! empty( $args['term_taxonomy_id'] ) || $is_single_include ) {
+	// object_ids means "what terms does this specific object have" — a
+	// lookup, not a browse/listing query — so it must never be filtered by
+	// country (this is what broke wp_get_post_terms()/get_the_terms() for
+	// a coupon's own store whenever viewed outside that store's country).
+	if ( ! empty( $args['slug'] ) || ! empty( $args['term_taxonomy_id'] ) || ! empty( $args['object_ids'] ) || $is_single_include ) {
 		return $args;
 	}
 
