@@ -37,99 +37,43 @@
     width: 100% !important;
 }
 
-/* Country switcher (header) — multi-country support, Step B.
-   Styled after grabon.in/grabonuae.ae's own switcher: a small pill with a
-   circular flag + code that opens a horizontal row of larger circular
-   flag badges (code below each), rather than a vertical list of full
-   country names. */
+/* Country switcher (header): two pill buttons — "Worldwide" (globe icon) and
+   "Visit UAE store" (flag). The active one is filled. */
 .wpc-country-switcher {
-    position: relative;
     flex-shrink: 0;
     margin: 0 10px;
-    display: inline-block;
+    display: inline-flex;
+    gap: 6px;
     z-index: 20;
 }
-.wpc-country-switcher__toggle {
+.wpc-country-switcher .wpc-country-switcher__btn {
     display: flex;
     align-items: center;
     gap: 6px;
-    padding: 5px 10px;
-    border: none;
+    padding: 5px 12px;
     border-radius: 20px;
     background: rgba(255, 255, 255, 0.12);
     color: #fff;
     font-size: 12px;
     font-weight: 700;
     letter-spacing: 0.3px;
-    cursor: pointer;
     white-space: nowrap;
     line-height: 1;
+    text-decoration: none;
 }
-.wpc-country-switcher__toggle:hover {
+.wpc-country-switcher .wpc-country-switcher__btn:hover {
     background: rgba(255, 255, 255, 0.22);
 }
-.wpc-country-switcher__caret {
-    font-size: 10px;
+.wpc-country-switcher .wpc-country-switcher__btn.is-active {
+    background: #fff;
+    color: #cc581a;
 }
 .wpc-country-switcher__flag {
-    width: 20px;
-    height: 20px;
+    width: 18px;
+    height: 18px;
     object-fit: cover;
     border-radius: 50%;
-    display: inline-block;
     box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.08);
-}
-.wpc-country-switcher__menu {
-    display: none;
-    position: absolute;
-    top: 100%;
-    right: 0;
-    z-index: 100;
-    margin: 8px 0 0;
-    padding: 14px;
-    gap: 18px;
-    min-width: max-content;
-    background: #fff;
-    border-radius: 8px;
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
-}
-.wpc-country-switcher.is-open .wpc-country-switcher__menu {
-    display: flex;
-}
-/* Qualified with the parent (.wpc-country-switcher__menu .item, not just
-   .item) so this beats the theme's own dynamically-generated
-   ".primary-header a { color: <light header text color> }" rule on CSS
-   specificity (two classes vs. one class + one element) — without that,
-   only the .is-active item (already two classes) was legible; every other
-   country in the dropdown inherited the header's light nav-link color and
-   was nearly invisible against the white dropdown background. */
-.wpc-country-switcher__menu .wpc-country-switcher__item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 6px;
-    color: #333;
-    font-size: 12px;
-    font-weight: 600;
-    padding: 4px;
-    border-radius: 6px;
-}
-.wpc-country-switcher__item:hover {
-    background: rgba(0, 0, 0, 0.05);
-}
-.wpc-country-switcher__menu .wpc-country-switcher__item.is-active {
-    color: #cc581a;
-    font-weight: 800;
-}
-.wpc-country-switcher__flag--lg {
-    width: 44px;
-    height: 44px;
-    /* Deliberately no ring/border here for the active state: India's own
-       saffron band is close enough to the brand accent (#cc581a) that a
-       ring in that color around the flag reads as part of the flag
-       artwork rather than a UI indicator. The active country is instead
-       marked by the bold, colored code label underneath only — never by
-       styling applied to the flag image itself. */
 }
 @media (max-width: 991px) {
     .wpc-country-switcher {

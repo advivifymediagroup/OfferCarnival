@@ -374,64 +374,35 @@ function wpcoupon_country_switcher() {
 		return;
 	}
 
-	$current_flag = wpcoupon_get_country_flag_url( $current_term );
+	// Built from get_option('home') directly rather than home_url() —
+	// home_url() is filtered to prepend "/ae" on /ae/ requests, which would
+	// double up into "/ae/ae/..." when building these links.
+	$wpc_site_root    = untrailingslashit( get_option( 'home' ) );
+	$wpc_current_path = parse_url( $_SERVER['REQUEST_URI'], PHP_URL_PATH );
+	$default_slug     = wpcoupon_get_default_country();
 	?>
 	<div class="wpc-country-switcher">
-		<button type="button" class="wpc-country-switcher__toggle" aria-haspopup="true" aria-expanded="false">
-			<?php if ( $current_flag ) : ?>
-				<img class="wpc-country-switcher__flag" src="<?php echo esc_url( $current_flag ); ?>" alt="" />
-			<?php endif; ?>
-			<span><?php echo esc_html( strtoupper( $current_term->slug ) ); ?></span>
-			<span class="wpc-country-switcher__caret" aria-hidden="true">&#9662;</span>
-		</button>
-		<div class="wpc-country-switcher__menu">
-			<?php
-			// Built from get_option('home') directly rather than home_url() —
-			// home_url() is filtered (above) to prepend "/ae" when the
-			// *current* request is already under that prefix, and building an
-			// "/ae" link by concatenating onto an already-"/ae"-prefixed
-			// home_url() would double it up into "/ae/ae/...". Using the raw,
-			// unfiltered site root sidesteps that: both links below are built
-			// explicitly, from the same starting point.
-			$wpc_site_root     = untrailingslashit( get_option( 'home' ) );
-			$wpc_current_path  = parse_url( $_SERVER['REQUEST_URI'], PHP_URL_PATH );
-			foreach ( $countries as $term ) :
-				$flag = wpcoupon_get_country_flag_url( $term );
-				$url  = esc_url( $wpc_site_root . ( $term->slug === wpcoupon_get_default_country() ? '' : '/' . $term->slug ) . $wpc_current_path );
-				?>
-				<a class="wpc-country-switcher__item<?php echo ( $term->slug === $current_slug ) ? ' is-active' : ''; ?>" href="<?php echo $url; ?>" title="<?php echo esc_attr( $term->name ); ?>">
+		<?php
+		foreach ( $countries as $term ) :
+			$is_default = $term->slug === $default_slug;
+			$is_active  = $term->slug === $current_slug;
+			$url        = esc_url( $wpc_site_root . ( $is_default ? '' : '/' . $term->slug ) . $wpc_current_path );
+			$flag       = wpcoupon_get_country_flag_url( $term );
+			$short      = 'ae' === $term->slug ? 'UAE' : $term->name;
+			?>
+			<a class="wpc-country-switcher__btn<?php echo $is_active ? ' is-active' : ''; ?>" href="<?php echo $url; ?>">
+				<?php if ( $is_default ) : ?>
+					<svg class="wpc-country-switcher__globe" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+					<span><?php esc_html_e( 'Worldwide', 'wp-coupon-pro' ); ?></span>
+				<?php else : ?>
 					<?php if ( $flag ) : ?>
-						<img class="wpc-country-switcher__flag wpc-country-switcher__flag--lg" src="<?php echo esc_url( $flag ); ?>" alt="" />
+						<img class="wpc-country-switcher__flag" src="<?php echo esc_url( $flag ); ?>" alt="" />
 					<?php endif; ?>
-					<span><?php echo esc_html( strtoupper( $term->slug ) ); ?></span>
-				</a>
-			<?php endforeach; ?>
-		</div>
+					<span><?php echo esc_html( $is_active ? sprintf( '%s store', $short ) : sprintf( 'Visit %s store', $short ) ); ?></span>
+				<?php endif; ?>
+			</a>
+		<?php endforeach; ?>
 	</div>
-	<script>
-	( function() {
-		var wrap = document.currentScript.previousElementSibling;
-		if ( ! wrap || ! wrap.classList.contains( 'wpc-country-switcher' ) ) {
-			return;
-		}
-		var toggle = wrap.querySelector( '.wpc-country-switcher__toggle' );
-		toggle.addEventListener( 'click', function( e ) {
-			e.stopPropagation();
-			var open = wrap.classList.toggle( 'is-open' );
-			toggle.setAttribute( 'aria-expanded', open ? 'true' : 'false' );
-		} );
-		document.addEventListener( 'click', function() {
-			wrap.classList.remove( 'is-open' );
-			toggle.setAttribute( 'aria-expanded', 'false' );
-		} );
-		document.addEventListener( 'keydown', function( e ) {
-			if ( e.key === 'Escape' ) {
-				wrap.classList.remove( 'is-open' );
-				toggle.setAttribute( 'aria-expanded', 'false' );
-			}
-		} );
-	} )();
-	</script>
 	<?php
 }
 
