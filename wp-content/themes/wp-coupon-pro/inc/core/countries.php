@@ -308,6 +308,19 @@ function wpcoupon_get_logo_for_country( $country_slug ) {
 }
 
 /**
+ * The footer logo is a hand-built Text widget containing the default site
+ * logo's URL, so swap that URL for the country's own logo inside widget text.
+ */
+add_filter( 'widget_text', function ( $text ) {
+	$default_logo = wpcoupon_get_option( 'site_logo', false, 'url' );
+	$country_logo = wpcoupon_get_logo_for_country( wpcoupon_get_current_country() );
+	if ( $default_logo && $country_logo && $country_logo !== $default_logo ) {
+		$text = str_replace( $default_logo, $country_logo, $text );
+	}
+	return $text;
+} );
+
+/**
  * Which sidebar id to render for one of the three frontpage regions
  * ('frontpage-before-main', 'frontpage-main', 'frontpage-after-main').
  * Non-default countries get their own registered "-{country}" counterpart
