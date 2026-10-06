@@ -200,15 +200,15 @@ function wpcoupon_get_country_field_options() {
  * @return string flag URL, or '' if neither exists
  */
 function wpcoupon_get_country_flag_url( $term ) {
-	$bundled_path = get_template_directory() . '/assets/flags/' . $term->slug . '.svg';
-
-	if ( file_exists( $bundled_path ) ) {
-		return get_template_directory_uri() . '/assets/flags/' . $term->slug . '.svg';
-	}
-
 	$custom = get_term_meta( $term->term_id, '_wpc_flag_image', true );
 
-	return $custom ? $custom : '';
+	if ( $custom ) {
+		return $custom;
+	}
+
+	$bundled_path = get_template_directory() . '/assets/flags/' . $term->slug . '.svg';
+
+	return file_exists( $bundled_path ) ? get_template_directory_uri() . '/assets/flags/' . $term->slug . '.svg' : '';
 }
 
 /**
@@ -413,15 +413,12 @@ function wpcoupon_country_switcher() {
 			$short      = 'ae' === $term->slug ? 'UAE' : $term->name;
 			?>
 			<a class="wpc-country-switcher__btn<?php echo $is_active ? ' is-active' : ''; ?>" href="<?php echo $url; ?>">
-				<?php if ( $is_default ) : ?>
+				<?php if ( $flag ) : ?>
+					<img class="wpc-country-switcher__flag" src="<?php echo esc_url( $flag ); ?>" alt="" />
+				<?php elseif ( $is_default ) : ?>
 					<svg class="wpc-country-switcher__globe" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-					<span><?php esc_html_e( 'Worldwide', 'wp-coupon-pro' ); ?></span>
-				<?php else : ?>
-					<?php if ( $flag ) : ?>
-						<img class="wpc-country-switcher__flag" src="<?php echo esc_url( $flag ); ?>" alt="" />
-					<?php endif; ?>
-					<span><?php echo esc_html( sprintf( 'Visit %s store', $short ) ); ?></span>
 				<?php endif; ?>
+				<span><?php echo $is_default ? esc_html__( 'Worldwide', 'wp-coupon-pro' ) : esc_html( sprintf( 'Visit %s store', $short ) ); ?></span>
 			</a>
 		<?php endforeach; ?>
 	</div>
