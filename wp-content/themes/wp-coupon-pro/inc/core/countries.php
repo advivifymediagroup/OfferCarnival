@@ -1255,3 +1255,42 @@ add_filter( 'rank_math/sitemap/entry', function ( $url, $type, $object ) {
 
 	return $url;
 }, 10, 3 );
+
+
+/**
+ * Stores keep their countries as slugs in _wpc_store_countries (coupons use
+ * real term relationships, which follow a renamed term automatically). So
+ * when a country's slug is edited, rewrite that slug in every store.
+ */
+function wpcoupon_rename_country_slug( $old, $new ) {
+	global $wpdb;
+	$rows = $wpdb->get_results( $wpdb->prepare(
+		"SELECT term_id, meta_value FROM {$wpdb->termmeta} WHERE meta_key = '_wpc_store_countries' AND meta_value LIKE %s",
+		'%"' . $wpdb->esc_like( $old ) . '"%'
+	) );
+	foreach ( $rows as $row ) {
+		$slugs = maybe_unserialize( $row->meta_value );
+		if ( ! is_array( $slugs ) ) {
+			continue;
+		}
+		$slugs = array_values( array_unique( array_map( function ( $s ) use ( $old, $new ) {
+			return $s === $old ? $new : $s;
+		}, $slugs ) ) );
+		update_term_meta( $row->term_id, '_wpc_store_countries', $slugs );
+	}
+	return count( $rows );
+}
+
+add_action( 'edit_terms', function ( $term_id, $taxonomy ) {
+	if ( 'wpc_country' === $taxonomy ) {
+		$GLOBALS['wpc_country_old_slug'][ $term_id ] = get_term( $term_id, 'wpc_country' )->slug;
+	}
+}, 10, 2 );
+
+add_action( 'edited_wpc_country', function ( $term_id ) {
+	$old = isset( $GLOBALS['wpc_country_old_slug'][ $term_id ] ) ? $GLOBALS['wpc_country_old_slug'][ $term_id ] : '';
+	$new = get_term( $term_id, 'wpc_country' )->slug;
+	if ( $old && $old !== $new ) {
+		wpcoupon_rename_country_slug( $old, $new );
+	}
+} );
