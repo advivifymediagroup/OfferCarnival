@@ -294,6 +294,10 @@ function wpcoupon_get_logo_for_country( $country_slug ) {
 		$term = get_term_by( 'slug', $country_slug, 'wpc_country' );
 		if ( $term ) {
 			$logo = get_term_meta( $term->term_id, '_wpc_country_logo', true );
+			if ( ! $logo ) {
+				$logo_id = get_term_meta( $term->term_id, '_wpc_country_logo_id', true );
+				$logo    = $logo_id ? wp_get_attachment_url( $logo_id ) : '';
+			}
 			if ( $logo ) {
 				return $logo;
 			}
@@ -398,7 +402,7 @@ function wpcoupon_country_switcher() {
 					<?php if ( $flag ) : ?>
 						<img class="wpc-country-switcher__flag" src="<?php echo esc_url( $flag ); ?>" alt="" />
 					<?php endif; ?>
-					<span><?php echo esc_html( $is_active ? sprintf( '%s store', $short ) : sprintf( 'Visit %s store', $short ) ); ?></span>
+					<span><?php echo esc_html( sprintf( 'Visit %s store', $short ) ); ?></span>
 				<?php endif; ?>
 			</a>
 		<?php endforeach; ?>
