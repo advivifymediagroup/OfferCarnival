@@ -390,6 +390,11 @@ function wpcoupon_country_switcher() {
 		foreach ( $countries as $term ) :
 			$is_default = $term->slug === $default_slug;
 			$is_active  = $term->slug === $current_slug;
+			// Only the "Visit UAE store" button on the main site; the globe
+			// "Worldwide" button appears just on a country store, as the way back.
+			if ( $is_default && $current_slug === $default_slug ) {
+				continue;
+			}
 			$url        = esc_url( $wpc_site_root . ( $is_default ? '' : '/' . $term->slug ) . $wpc_current_path );
 			$flag       = wpcoupon_get_country_flag_url( $term );
 			$short      = 'ae' === $term->slug ? 'UAE' : $term->name;
