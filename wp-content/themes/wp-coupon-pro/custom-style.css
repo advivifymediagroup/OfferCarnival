@@ -165,32 +165,138 @@
     margin-bottom: 20px;
 }
 
-/* Categories page (/categories/, templates/category-az.php) — the theme's
-   own ".cate-az .category-name img" rule renders the uploaded photo at a
-   bare 2em (~32px) with no object-fit, so real photos (as opposed to the
-   simple single-color icon glyphs this size was designed for) are too small
-   to recognize and can be stretched off their aspect ratio. Sized up to
-   match the theme's other circular badges (e.g. the 44px country flag
-   badges in .wpc-country-switcher__flag--lg) and given object-fit so the
-   photo crops instead of stretching, while keeping the same circular,
-   bordered look the theme already uses here. */
-.cate-az .category-name .cat-az-thumb {
-    width: 44px;
-    height: 44px;
-    margin-right: 10px;
+/* Categories page: editor content (headings/text) plus the [wpc_categories]
+   grids from inc/core/categories-shortcode.php. */
+.cat-page-with-icon .wpc-cats-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 16px;
+    flex-wrap: wrap;
+    padding-bottom: 14px;
+    margin-bottom: 24px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
 }
-.cate-az .category-name .cat-az-thumb img {
+.cat-page-with-icon .wpc-cats-head h2 {
+    margin: 0 0 4px;
+    font-size: 26px;
+    font-weight: 800;
+    text-transform: uppercase;
+    color: #0b1530;
+}
+.cat-page-with-icon .wpc-cats-head p {
+    margin: 0;
+    color: #6b7280;
+    font-size: 14px;
+}
+.cat-page-with-icon .wpc-cats-head .wpc-cats-badge {
+    color: #cc581a;
+    font-size: 13px;
+    font-weight: 700;
+}
+.cat-page-with-icon .wpc-cats-head + .wpc-cats,
+.cat-page-with-icon .wpc-cats {
+    margin-bottom: 48px;
+}
+.wpc-cats__grid {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 22px;
+}
+@media (max-width: 991px) {
+    .wpc-cats__grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 520px) {
+    .wpc-cats__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+.wpc-cat[hidden] {
+    display: none;
+}
+.wpc-cat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 18px 10px 12px;
+    background: #fffdfa;
+    border: 2px solid #e8883a;
+    border-radius: 22px;
+    box-shadow: 0 4px 10px rgba(232, 136, 58, 0.15);
+    text-decoration: none;
+    transition: transform 0.15s, box-shadow 0.15s;
+}
+.wpc-cat:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 16px rgba(232, 136, 58, 0.28);
+}
+.wpc-cat__media {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 64px;
+    height: 64px;
+    margin-bottom: 8px;
+    font-size: 40px;
+    color: #0b1530;
+}
+.wpc-cat__media img {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    object-position: center;
+    border-radius: 14px;
 }
-/* The thumb + label live inside <li class="cate-parent"> (nested one level
-   inside the <a class="category-name">), so that's the element that needs
-   to be a flex row for the now-larger thumb to sit centered next to the
-   text instead of relying on float + line-height. */
-.cate-az .cate-parent {
+.wpc-cat__media i.icon {
+    margin: 0;
+    font-size: 40px;
+    width: auto;
+    height: auto;
+}
+.wpc-cat__name {
+    width: 100%;
+    padding-top: 10px;
+    border-top: 1px solid rgba(0, 0, 0, 0.08);
+    min-height: 3em;
     display: flex;
     align-items: center;
+    justify-content: center;
+    text-align: center;
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1.25;
+    color: #0b1530;
 }
-
+.wpc-cats__letters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 18px;
+    padding-bottom: 6px;
+    margin-bottom: 18px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+.wpc-cats__letters button {
+    padding: 4px 0;
+    background: none;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    font-size: 14px;
+    font-weight: 600;
+    color: #6b7280;
+    cursor: pointer;
+}
+.wpc-cats__letters button.is-active {
+    color: #0b1530;
+    font-weight: 800;
+    border-bottom-color: #cc581a;
+}
+.wpc-cats__letters button:disabled {
+    opacity: 0.35;
+    cursor: default;
+}
+.wpc-cats__showing {
+    margin: 0 0 20px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #6b7280;
+}
+.wpc-cats__showing b {
+    color: #cc581a;
+}

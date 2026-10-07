@@ -453,6 +453,13 @@ function wpcoupon_register_coupon_store_taxonomy_metabox() {
 
 
     $cat_meta->add_field( array(
+        'name'          => esc_html__( 'Popular category', 'wp-coupon-pro' ),
+        'id'            => $prefix . 'cat_popular',
+        'type'          => 'checkbox',
+        'desc'          => 'Show in the "Popular Categories" block on the Categories page.',
+    ) );
+
+    $cat_meta->add_field( array(
         'name'    => esc_html__( 'Image', 'wp-coupon-pro' ),
         'desc'    => 'The image use as thumbnail on single category page',
         'id'      => $prefix . 'cat_image',

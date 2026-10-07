@@ -516,6 +516,11 @@ require_once get_template_directory() . '/inc/core/countries.php';
  */
 require_once get_template_directory() . '/inc/core/extension-api.php';
 
+/**
+ * Shortcodes for the Categories page.
+ */
+require_once get_template_directory() . '/inc/core/categories-shortcode.php';
+
 
 /**
  * Coupon functions.
