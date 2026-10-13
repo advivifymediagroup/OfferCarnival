@@ -302,6 +302,27 @@ function wpcoupon_widgets_init() {
 		)
 	);
 
+	// South East Asia counterparts of the three frontpage regions (same idea
+	// as the UAE ones above; the "-sea" suffix is how
+	// wpcoupon_get_country_sidebar_id() finds them).
+	foreach ( array(
+		'frontpage-before-main-sea' => 'Frontpage Before Main Content (SEA)',
+		'frontpage-main-sea'        => 'Frontpage Main Content (SEA)',
+		'frontpage-after-main-sea'  => 'Frontpage After Main Content (SEA)',
+	) as $sea_sidebar_id => $sea_sidebar_name ) {
+		register_sidebar(
+			array(
+				'name'          => $sea_sidebar_name,
+				'id'            => $sea_sidebar_id,
+				'description'   => esc_html__( 'Displays on the frontpage template when the South East Asia country is selected. Leave empty to fall back to the shared sidebar.', 'wp-coupon-pro' ),
+				'before_widget' => '<aside id="%1$s" class="widget %2$s">',
+				'after_widget'  => '</aside>',
+				'before_title'  => '<h3 class="widget-title">',
+				'after_title'   => '</h3>',
+			)
+		);
+	}
+
 }
 add_action( 'widgets_init', 'wpcoupon_widgets_init' );
 

@@ -37,13 +37,13 @@
     width: 100% !important;
 }
 
-/* Country switcher (header): two pill buttons — "Worldwide" (globe icon) and
-   "Visit UAE store" (flag). The active one is filled. */
+/* Country switcher (header): one pill showing the region you are in
+   (Worldwide / UAE store / SEA store) that opens a menu of the other regions. */
 .wpc-country-switcher {
+    position: relative;
     flex-shrink: 0;
     margin: 0 10px;
-    display: inline-flex;
-    gap: 6px;
+    display: inline-block;
     z-index: 20;
 }
 .wpc-country-switcher .wpc-country-switcher__btn {
@@ -51,6 +51,7 @@
     align-items: center;
     gap: 6px;
     padding: 5px 12px;
+    border: 0;
     border-radius: 20px;
     background: rgba(255, 255, 255, 0.12);
     color: #fff;
@@ -59,14 +60,13 @@
     letter-spacing: 0.3px;
     white-space: nowrap;
     line-height: 1;
-    text-decoration: none;
+    cursor: pointer;
 }
 .wpc-country-switcher .wpc-country-switcher__btn:hover {
     background: rgba(255, 255, 255, 0.22);
 }
-.wpc-country-switcher .wpc-country-switcher__btn.is-active {
-    background: #fff;
-    color: #cc581a;
+.wpc-country-switcher__caret {
+    font-size: 10px;
 }
 .wpc-country-switcher__flag {
     width: 18px;
@@ -74,6 +74,41 @@
     object-fit: cover;
     border-radius: 50%;
     box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.08);
+}
+.wpc-country-switcher__menu {
+    display: none;
+    position: absolute;
+    top: 100%;
+    right: 0;
+    z-index: 100;
+    margin-top: 8px;
+    padding: 6px;
+    min-width: max-content;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
+}
+.wpc-country-switcher.is-open .wpc-country-switcher__menu {
+    display: block;
+}
+/* Qualified with the parent so it beats the theme's ".primary-header a"
+   color rule (otherwise the items inherit the header's light link color and
+   are invisible on the white menu). */
+.wpc-country-switcher__menu .wpc-country-switcher__item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    color: #0b1530;
+    font-size: 13px;
+    font-weight: 700;
+    white-space: nowrap;
+    text-decoration: none;
+}
+.wpc-country-switcher__menu .wpc-country-switcher__item:hover {
+    background: rgba(204, 88, 26, 0.1);
+    color: #cc581a;
 }
 @media (max-width: 991px) {
     .wpc-country-switcher {
@@ -146,6 +181,17 @@
     .wpc-ae-hero-banner {
         padding: 18px 20px;
     }
+}
+
+/* SEA variant of the hero banner: same layout, teal/gold edge instead of the UAE flag stripe. */
+.wpc-sea-hero-banner {
+    background: linear-gradient(135deg, #0b6e99 0%, #08485f 100%);
+}
+.wpc-sea-hero-banner::before {
+    background: linear-gradient(to bottom, #f2b705 0%, #f2b705 50%, #fff 50%, #fff 100%);
+}
+.wpc-sea-hero-banner .wpc-ae-hero-banner__cta {
+    color: #08485f;
 }
 
 /* A Redux-generated inline <style> tag (theme customizer output — same

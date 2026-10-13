@@ -30,13 +30,20 @@
  * never wp-admin, never a hypothetical real page slug that merely starts
  * with "ae" (e.g. "/aero/").
  */
+// URL prefixes of the non-default regions (their wpc_country term slugs).
+// Hardcoded: this runs before taxonomies exist. Add a slug here to add a region.
+$wpc_region_prefixes = array( 'ae', 'sea' );
+
 $wpc_request_path = parse_url( $_SERVER['REQUEST_URI'], PHP_URL_PATH );
-$wpc_is_ae_path    = $wpc_request_path && preg_match( '#^/ae(/|$)#', $wpc_request_path );
+$wpc_url_region   = '';
+if ( $wpc_request_path && preg_match( '#^/(' . implode( '|', $wpc_region_prefixes ) . ')(/|$)#', $wpc_request_path, $wpc_m ) ) {
+	$wpc_url_region = $wpc_m[1];
+}
 
-if ( $wpc_is_ae_path ) {
-	define( 'WPC_URL_COUNTRY', 'ae' );
+if ( $wpc_url_region ) {
+	define( 'WPC_URL_COUNTRY', $wpc_url_region );
 
-	$wpc_stripped_path = substr( $wpc_request_path, 3 ); // drop the leading "/ae"
+	$wpc_stripped_path = substr( $wpc_request_path, strlen( $wpc_url_region ) + 1 ); // drop the leading "/{region}"
 	if ( '' === $wpc_stripped_path ) {
 		$wpc_stripped_path = '/';
 	}
@@ -58,7 +65,7 @@ if ( $wpc_is_ae_path ) {
  * doesn't leave that bare page's own AJAX calls still thinking they're UAE.
  */
 if ( ! headers_sent() && ! defined( 'DOING_AJAX' ) ) { // never on admin-ajax: it has no "/ae" in its URL, so it must keep the page's cookie
-	$wpc_cookie_target = $wpc_is_ae_path ? 'ae' : 'in';
+	$wpc_cookie_target = $wpc_url_region ? $wpc_url_region : 'in';
 	if ( ( isset( $_COOKIE['wpc_country'] ) ? $_COOKIE['wpc_country'] : '' ) !== $wpc_cookie_target ) {
 		setcookie( 'wpc_country', $wpc_cookie_target, time() + DAY_IN_SECONDS, COOKIEPATH ? COOKIEPATH : '/', COOKIE_DOMAIN );
 		$_COOKIE['wpc_country'] = $wpc_cookie_target;
@@ -83,7 +90,7 @@ if ( ! headers_sent() && ! defined( 'DOING_AJAX' ) ) { // never on admin-ajax: i
  */
 if ( defined( 'WPC_URL_COUNTRY' ) ) {
 	add_filter( 'home_url', function ( $url ) {
-		return preg_replace( '#^(https?://[^/]+)#', '$1/ae', $url, 1 );
+		return preg_replace( '#^(https?://[^/]+)#', '$1/' . WPC_URL_COUNTRY, $url, 1 );
 	} );
 	add_filter( 'redirect_canonical', '__return_false' );
 }
@@ -392,37 +399,86 @@ function wpcoupon_country_switcher() {
 	}
 
 	// Built from get_option('home') directly rather than home_url() —
-	// home_url() is filtered to prepend "/ae" on /ae/ requests, which would
-	// double up into "/ae/ae/..." when building these links.
-	$wpc_site_root    = untrailingslashit( get_option( 'home' ) );
-	$wpc_current_path = parse_url( $_SERVER['REQUEST_URI'], PHP_URL_PATH );
-	$default_slug     = wpcoupon_get_default_country();
+	// home_url() is filtered to prepend the region on region requests, which
+	// would double it up into "/ae/ae/..." when building these links.
+	$wpc_site_root = untrailingslashit( get_option( 'home' ) );
+	$default_slug  = wpcoupon_get_default_country();
+	$globe         = '<svg class="wpc-country-switcher__globe" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>';
+
+	// Trigger shows the region you are in; the menu lists every other region.
+	$icon = function ( $term ) use ( $default_slug, $globe ) {
+		$flag = wpcoupon_get_country_flag_url( $term );
+		if ( $flag ) {
+			return '<img class="wpc-country-switcher__flag" src="' . esc_url( $flag ) . '" alt="" />';
+		}
+		return $term->slug === $default_slug ? $globe : '';
+	};
+	$label = function ( $term, $visit ) use ( $default_slug ) {
+		if ( $term->slug === $default_slug ) {
+			return esc_html__( 'Worldwide', 'wp-coupon-pro' );
+		}
+		$short = wpcoupon_region_short_label( $term );
+		return esc_html( $visit ? sprintf( 'Visit %s store', $short ) : sprintf( '%s store', $short ) );
+	};
 	?>
 	<div class="wpc-country-switcher">
-		<?php
-		foreach ( $countries as $term ) :
-			$is_default = $term->slug === $default_slug;
-			$is_active  = $term->slug === $current_slug;
-			// Exactly one button: "Visit UAE store" on the main site, and the
-			// globe "Worldwide" button (the way back) on a country store.
-			if ( $is_default === ( $current_slug === $default_slug ) ) {
-				continue;
-			}
-			$url        = esc_url( $wpc_site_root . ( $is_default ? '' : '/' . $term->slug ) . $wpc_current_path );
-			$flag       = wpcoupon_get_country_flag_url( $term );
-			$short      = 'ae' === $term->slug ? 'UAE' : $term->name;
-			?>
-			<a class="wpc-country-switcher__btn<?php echo $is_active ? ' is-active' : ''; ?>" href="<?php echo $url; ?>">
-				<?php if ( $flag ) : ?>
-					<img class="wpc-country-switcher__flag" src="<?php echo esc_url( $flag ); ?>" alt="" />
-				<?php elseif ( $is_default ) : ?>
-					<svg class="wpc-country-switcher__globe" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-				<?php endif; ?>
-				<span><?php echo $is_default ? esc_html__( 'Worldwide', 'wp-coupon-pro' ) : esc_html( sprintf( 'Visit %s store', $short ) ); ?></span>
-			</a>
-		<?php endforeach; ?>
+		<button type="button" class="wpc-country-switcher__btn is-active" aria-haspopup="true" aria-expanded="false">
+			<?php echo $icon( $current_term ); ?>
+			<span><?php echo $label( $current_term, false ); ?></span>
+			<span class="wpc-country-switcher__caret" aria-hidden="true">&#9662;</span>
+		</button>
+		<div class="wpc-country-switcher__menu">
+			<?php foreach ( $countries as $term ) : ?>
+				<?php if ( $term->slug === $current_slug ) { continue; } ?>
+				<a class="wpc-country-switcher__item" href="<?php echo esc_url( $wpc_site_root . ( $term->slug === $default_slug ? '' : '/' . $term->slug ) . '/' ); ?>">
+					<?php echo $icon( $term ); ?>
+					<span><?php echo $label( $term, true ); ?></span>
+				</a>
+			<?php endforeach; ?>
+		</div>
 	</div>
+	<script>
+	( function() {
+		var wrap = document.currentScript.previousElementSibling;
+		if ( ! wrap || ! wrap.classList.contains( 'wpc-country-switcher' ) ) {
+			return;
+		}
+		var toggle = wrap.querySelector( '.wpc-country-switcher__btn' );
+		function close() {
+			wrap.classList.remove( 'is-open' );
+			toggle.setAttribute( 'aria-expanded', 'false' );
+		}
+		toggle.addEventListener( 'click', function( e ) {
+			e.stopPropagation();
+			var open = wrap.classList.toggle( 'is-open' );
+			toggle.setAttribute( 'aria-expanded', open ? 'true' : 'false' );
+		} );
+		document.addEventListener( 'click', close );
+		document.addEventListener( 'keydown', function( e ) {
+			if ( e.key === 'Escape' ) {
+				close();
+			}
+		} );
+	} )();
+	</script>
 	<?php
+}
+
+/** Short region name for buttons: "UAE", "SEA", else the term's own name. */
+function wpcoupon_region_short_label( $term ) {
+	$short = array( 'ae' => 'UAE', 'sea' => 'SEA' );
+	return isset( $short[ $term->slug ] ) ? $short[ $term->slug ] : $term->name;
+}
+
+/**
+ * The URL prefix for something tagged with these country slugs: the first
+ * non-default region, or '' if it belongs to the default country (or none).
+ */
+function wpcoupon_region_prefix( $countries ) {
+	if ( ! is_array( $countries ) || ! $countries || in_array( wpcoupon_get_default_country(), $countries, true ) ) {
+		return '';
+	}
+	return (string) reset( $countries );
 }
 
 /**
@@ -1231,8 +1287,8 @@ add_filter( 'rank_math/sitemap/xml_post_url', function ( $url, $post ) {
 
 	$countries = wp_get_post_terms( $post->ID, 'wpc_country', array( 'fields' => 'slugs' ) );
 
-	if ( in_array( 'ae', $countries, true ) && ! in_array( wpcoupon_get_default_country(), $countries, true ) ) {
-		$url = preg_replace( '#^(https?://[^/]+)#', '$1/ae', $url, 1 );
+	if ( $prefix = wpcoupon_region_prefix( $countries ) ) {
+		$url = preg_replace( '#^(https?://[^/]+)#', '$1/' . $prefix, $url, 1 );
 	}
 
 	return $url;
@@ -1246,8 +1302,8 @@ add_filter( 'rank_math/sitemap/entry', function ( $url, $type, $object ) {
 	$countries = get_term_meta( $object->term_id, '_wpc_store_countries', true );
 	$countries = is_array( $countries ) ? $countries : array();
 
-	if ( in_array( 'ae', $countries, true ) && ! in_array( wpcoupon_get_default_country(), $countries, true ) ) {
-		$url['loc'] = preg_replace( '#^(https?://[^/]+)#', '$1/ae', $url['loc'], 1 );
+	if ( $prefix = wpcoupon_region_prefix( $countries ) ) {
+		$url['loc'] = preg_replace( '#^(https?://[^/]+)#', '$1/' . $prefix, $url['loc'], 1 );
 	}
 
 	return $url;
