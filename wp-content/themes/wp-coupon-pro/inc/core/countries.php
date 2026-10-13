@@ -57,7 +57,7 @@ if ( $wpc_is_ae_path ) {
  * rather than left to persist, so visiting a bare page after an "/ae" one
  * doesn't leave that bare page's own AJAX calls still thinking they're UAE.
  */
-if ( ! headers_sent() ) {
+if ( ! headers_sent() && ! defined( 'DOING_AJAX' ) ) { // never on admin-ajax: it has no "/ae" in its URL, so it must keep the page's cookie
 	$wpc_cookie_target = $wpc_is_ae_path ? 'ae' : 'in';
 	if ( ( isset( $_COOKIE['wpc_country'] ) ? $_COOKIE['wpc_country'] : '' ) !== $wpc_cookie_target ) {
 		setcookie( 'wpc_country', $wpc_cookie_target, time() + DAY_IN_SECONDS, COOKIEPATH ? COOKIEPATH : '/', COOKIE_DOMAIN );
@@ -1291,3 +1291,57 @@ add_action( 'edited_wpc_country', function ( $term_id ) {
 		wpcoupon_rename_country_slug( $old, $new );
 	}
 } );
+
+
+/**
+ * SQL condition: the store term in $term_id_expr belongs to the visitor's
+ * current country (same rule as wpcoupon_filter_stores_by_country(), for raw
+ * queries such as the live search suggestions).
+ */
+function wpcoupon_store_country_sql( $term_id_expr ) {
+	global $wpdb;
+	$country = wpcoupon_get_current_country();
+	$has     = "EXISTS ( SELECT 1 FROM {$wpdb->termmeta} tm WHERE tm.term_id = $term_id_expr AND tm.meta_key = '_wpc_store_countries' AND tm.meta_value LIKE %s )";
+	$sql     = $wpdb->prepare( $has, '%"' . $wpdb->esc_like( $country ) . '"%' );
+	if ( wpcoupon_get_default_country() === $country ) {
+		$sql .= " OR NOT EXISTS ( SELECT 1 FROM {$wpdb->termmeta} tm WHERE tm.term_id = $term_id_expr AND tm.meta_key = '_wpc_store_countries' )";
+	}
+	return '(' . $sql . ')';
+}
+
+/**
+ * Live-search suggestions come from admin-ajax.php, which never carries the
+ * "/ae" prefix, so add it to the links they return when the visitor is in a
+ * non-default country (otherwise a UAE suggestion lands on the worldwide site).
+ */
+add_filter( 'wp_coupon_ajax_search_result', function ( $results ) {
+	$country = wpcoupon_get_current_country();
+	if ( $country === wpcoupon_get_default_country() || empty( $results['results'] ) ) {
+		return $results;
+	}
+	$root = untrailingslashit( get_option( 'home' ) );
+	foreach ( $results['results'] as &$r ) {
+		if ( ! empty( $r['url'] ) && 0 === strpos( $r['url'], $root . '/' ) && 0 !== strpos( $r['url'], $root . '/' . $country . '/' ) ) {
+			$r['url'] = $root . '/' . $country . substr( $r['url'], strlen( $root ) );
+		}
+	}
+	return $results;
+} );
+
+
+/**
+ * SQL condition: the coupon whose id is $post_id_expr belongs to the visitor's
+ * current country. Used by the store-name branch of the search query, which
+ * is OR'd onto the main WHERE and so escapes the country filter that
+ * wpcoupon_filter_coupons_by_country() adds to the main query.
+ */
+function wpcoupon_coupon_country_sql( $post_id_expr ) {
+	global $wpdb;
+	$country = wpcoupon_get_current_country();
+	$tagged  = "SELECT tr2.object_id FROM {$wpdb->term_relationships} tr2 JOIN {$wpdb->term_taxonomy} tt2 ON tt2.term_taxonomy_id = tr2.term_taxonomy_id AND tt2.taxonomy = 'wpc_country'";
+	$sql     = $wpdb->prepare( "$post_id_expr IN ( $tagged JOIN {$wpdb->terms} t2 ON t2.term_id = tt2.term_id WHERE t2.slug = %s )", $country );
+	if ( wpcoupon_get_default_country() === $country ) {
+		$sql .= " OR $post_id_expr NOT IN ( $tagged )";
+	}
+	return '(' . $sql . ')';
+}

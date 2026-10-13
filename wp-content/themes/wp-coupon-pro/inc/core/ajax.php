@@ -15,7 +15,7 @@ function wpcoupon_ajax_search_coupon_init(){
 	}
 
 }
-add_action( 'init', 'wpcoupon_ajax_search_coupon_init' );
+add_action( 'init', 'wpcoupon_ajax_search_coupon_init', 99 ); // after taxonomies are registered, so the country is known
 
 
 function wpcoupon_coupon_ajax_search(){
@@ -50,6 +50,7 @@ function wpcoupon_coupon_ajax_search(){
             {$wpdb->term_taxonomy}.`taxonomy` $sql_tax
             AND  {$wpdb->terms}.`name` LIKE %s 
             $and
+            AND ( {$wpdb->term_taxonomy}.`taxonomy` <> 'coupon_store' OR " . str_replace( '%', '%%', wpcoupon_store_country_sql( "{$wpdb->terms}.`term_id`" ) ) . " )
 
         GROUP BY {$wpdb->terms}.`term_id`
         ORDER BY  {$wpdb->terms}.`name` ASC

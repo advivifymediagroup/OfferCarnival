@@ -55,7 +55,7 @@ class  WPCoupon_Search{
         }
         $s = trim( $s );
         if ( $s ) {
-            $where .= "{$op} (t.name LIKE '%".$s. "%' AND tt.taxonomy IN ( 'coupon_store', 'coupon_category' ) AND {$wpdb->posts}.post_status = 'publish' )";
+            $where .= "{$op} (t.name LIKE '%".$s. "%' AND tt.taxonomy IN ( 'coupon_store', 'coupon_category' ) AND {$wpdb->posts}.post_status = 'publish'" . ( is_admin() ? '' : ' AND ' . wpcoupon_coupon_country_sql( "{$wpdb->posts}.ID" ) ) . " )";
         }
 
         return $where;
