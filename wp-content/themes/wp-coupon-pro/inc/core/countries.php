@@ -1345,3 +1345,20 @@ function wpcoupon_coupon_country_sql( $post_id_expr ) {
 	}
 	return '(' . $sql . ')';
 }
+
+
+/**
+ * wp-admin (and admin-ajax) is never under "/ae", so "View Store" and other
+ * store links built there would land on the worldwide site. Add the prefix
+ * for stores that exist only outside the default country.
+ */
+add_filter( 'term_link', function ( $url, $term, $taxonomy ) {
+	if ( 'coupon_store' !== $taxonomy || ! is_admin() || defined( 'WPC_URL_COUNTRY' ) ) {
+		return $url;
+	}
+	$countries = wpcoupon_get_store_countries( $term->term_id );
+	if ( ! $countries || in_array( wpcoupon_get_default_country(), $countries, true ) ) {
+		return $url;
+	}
+	return preg_replace( '#^(https?://[^/]+)#', '$1/' . reset( $countries ), $url, 1 );
+}, 10, 3 );
