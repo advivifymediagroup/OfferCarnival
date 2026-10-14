@@ -32,7 +32,7 @@ if (wpcoupon_get_option('before_footer', '') != '') {
                 <?php } ?>
 
                 <div id="footer-2" class="six wide column footer-column widget-area" role="complementary">
-					<?php dynamic_sidebar('footer-center'); ?>
+					<?php dynamic_sidebar( function_exists( 'wpcoupon_get_country_sidebar_id' ) ? wpcoupon_get_country_sidebar_id( 'footer-center' ) : 'footer-center' ); ?>
                 </div>
 
                 <div id="footer-4" class="five wide column footer-column widget-area" role="complementary">

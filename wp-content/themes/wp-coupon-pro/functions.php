@@ -205,6 +205,21 @@ function wpcoupon_widgets_init() {
 		)
 	);
 
+	// UAE counterpart of "Footer Center", which holds the "Top Stores" list
+	// (otherwise it would show the worldwide stores on the UAE site too).
+	// Left empty it falls back to the shared one, via wpcoupon_get_country_sidebar_id().
+	register_sidebar(
+		array(
+			'name'          => esc_html__( 'Footer Center (UAE)', 'wp-coupon-pro' ),
+			'id'            => 'footer-center-ae',
+			'description'   => esc_html__( 'Footer "Top Stores" shown on the UAE site. Leave empty to show the shared Footer Center.', 'wp-coupon-pro' ),
+			'before_widget' => '<aside id="%1$s" class="widget %2$s">',
+			'after_widget'  => '</aside>',
+			'before_title'  => '<h3 class="widget-title">',
+			'after_title'   => '</h3>',
+		)
+	);
+
 	// Frontpage sidebar
 	register_sidebar(
 		array(
