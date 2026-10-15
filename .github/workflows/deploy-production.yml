@@ -1,0 +1,68 @@
+name: Deploy WordPress to Production
+
+# Pushing to the `production` branch deploys the theme to the live site.
+# Same Hostinger account and SSH secrets as staging; only the target differs.
+on:
+  push:
+    branches:
+      - production
+  workflow_dispatch:
+
+# Never run two production deploys at once, and never cancel one halfway.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    # A GitHub "environment" lets you add required reviewers later
+    # (Settings > Environments > production) if you want a manual approval gate.
+    environment: production
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # A PHP syntax error would white-screen the live site, so stop here instead.
+      - name: PHP syntax check (theme)
+        run: |
+          bad=$(find wp-content/themes/wp-coupon-pro -name '*.php' -print0 | xargs -0 -n1 php -l 2>&1 | grep -v '^No syntax errors detected' || true)
+          if [ -n "$bad" ]; then
+            echo "$bad"
+            exit 1
+          fi
+          echo "All theme PHP files pass the syntax check"
+
+      - name: Add server to known_hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
+
+      - name: Setup SSH Key
+        run: |
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/github_deploy
+          chmod 600 ~/.ssh/github_deploy
+
+      # The live site is the root of the main domain; staging is its /staging subfolder.
+      # Override by setting a repository variable PRODUCTION_PATH if the live docroot differs.
+      - name: Check the production theme folder exists
+        run: |
+          THEME_DIR="${{ vars.PRODUCTION_PATH || format('/home/{0}/domains/offercarnival.com/public_html', secrets.SSH_USERNAME) }}/wp-content/themes/wp-coupon-pro"
+          echo "THEME_DIR=$THEME_DIR" >> $GITHUB_ENV
+          ssh -i ~/.ssh/github_deploy -p ${{ secrets.SSH_PORT }} -o StrictHostKeyChecking=no \
+            ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} "test -d '$THEME_DIR'" \
+            || { echo "Production theme folder not found: $THEME_DIR (set the PRODUCTION_PATH repository variable)"; exit 1; }
+
+      # Only the theme is synced, and --delete only removes files inside it: nothing else in
+      # wp-content (uploads, plugins, other themes, caches, wp-config.php) is touched.
+      - name: Deploy theme via rsync
+        run: |
+          rsync -rlgoDzvc --delete \
+            -e "ssh -i ~/.ssh/github_deploy -p ${{ secrets.SSH_PORT }} -o StrictHostKeyChecking=no" \
+            ./wp-content/themes/wp-coupon-pro/ \
+            ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}:$THEME_DIR/
+
+      - name: Done
+        run: echo "Production deployment complete"
