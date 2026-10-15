@@ -27,7 +27,10 @@ jobs:
       # A PHP syntax error would white-screen the live site, so stop here instead.
       - name: PHP syntax check (theme)
         run: |
-          bad=$(find wp-content/themes/wp-coupon-pro -name '*.php' -print0 | xargs -0 -n1 php -l 2>&1 | grep -v '^No syntax errors detected' || true)
+          bad=""
+          while IFS= read -r -d '' f; do
+            out=$(php -l "$f" 2>&1) || bad="$bad $out;"
+          done < <(find wp-content/themes/wp-coupon-pro -name '*.php' -print0)
           if [ -n "$bad" ]; then
             echo "$bad"
             exit 1
