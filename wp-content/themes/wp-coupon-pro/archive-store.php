@@ -41,7 +41,7 @@ do_action( 'wpcoupon_after_header' );
                 $_stores_number = array();
                 // Group stores by alphabet
                 foreach (  $stores as $k => $store ) {
-                    $first_char = $store->post_title{0};
+                    $first_char = $store->post_title[0];
                     $first_char = strtoupper( $first_char );
                     if( is_numeric( $first_char ) ) {
                         $_stores_number[] = $store;
