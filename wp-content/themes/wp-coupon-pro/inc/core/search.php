@@ -30,18 +30,21 @@ class  WPCoupon_Search{
 
         if ( is_search() || ( isset( $_REQUEST['c_s_store'] ) && $_REQUEST['c_s_store'] != '' ) ) {
 
-            add_filter('posts_where', array($this, 'where'));
-            add_filter('posts_join', array($this, 'join'));
-            add_filter('posts_groupby', array($this, 'groupby'));
+            add_filter('posts_where', array($this, 'where'), 10, 2);
+            add_filter('posts_join', array($this, 'join'), 10, 2);
+            add_filter('posts_groupby', array($this, 'groupby'), 10, 2);
             if ( ! is_admin() ) {
-                add_filter('posts_orderby', array($this, 'orderby'));
-                add_filter('posts_distinct',  array( $this, 'distinct' ) );
+                add_filter('posts_orderby', array($this, 'orderby'), 10, 2);
+                add_filter('posts_distinct',  array( $this, 'distinct' ), 10, 2 );
             }
 
         }
     }
 
-    function where($where){
+    function where($where, $query = null){
+        // Only the search query itself: these filters stay registered for the rest of the request, and
+        // WordPress runs other queries (e.g. the theme's global styles) that must not be rewritten.
+        if ( $query && ! $query->is_main_query() ) { return $where; }
         global $wpdb;
         $s = '';
         $op = 'OR';
@@ -61,7 +64,8 @@ class  WPCoupon_Search{
         return $where;
     }
 
-    function join($join){
+    function join($join, $query = null){
+        if ( $query && ! $query->is_main_query() ) { return $join; }
         global $wpdb;
 
         $join = "LEFT JOIN {$wpdb->term_relationships} AS tr ON {$wpdb->posts}.ID = tr.object_id
@@ -71,7 +75,8 @@ class  WPCoupon_Search{
         return $join;
     }
 
-    function groupby($groupby){
+    function groupby($groupby, $query = null){
+        if ( $query && ! $query->is_main_query() ) { return $groupby; }
         global $wpdb;
 
         $groupby = "{$wpdb->posts}.ID";
@@ -79,13 +84,14 @@ class  WPCoupon_Search{
         return $groupby;
     }
 
-    function orderby( $orderby ){
+    function orderby( $orderby, $query = null ){
+        if ( $query && ! $query->is_main_query() ) { return $orderby; }
         global $wpdb;
         $orderby = " t.name DESC, {$wpdb->posts}.post_title ";
         return $orderby;
     }
 
-    function distinct( $distinct ){
+    function distinct( $distinct, $query = null ){
         return $distinct;
     }
 
