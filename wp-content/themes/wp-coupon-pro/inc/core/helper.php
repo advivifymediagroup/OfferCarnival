@@ -135,7 +135,41 @@ function wp_coupon_remove_class_action( $tag, $class_name = '', $method_name = '
 }
 
 
-add_action( 'init', 'flush_rewrite_rules' );
+/**
+ * Rewrite rules are stored in the database and written into .htaccess, so they must only be flushed
+ * when they can actually have changed. This used to flush on EVERY request, which meant a database
+ * write per page view plus, on every admin/AJAX request, a rewrite of .htaccess: a momentary hiccup
+ * during one of those writes left .htaccess without its WordPress block, and until the next write
+ * restored it every pretty URL fell through to the server's own 404 page.
+ *
+ * Now it flushes once, when the settings the rules are built from change (or after a deploy that bumps
+ * the number below), and never without a permalink structure (that is what would blank the block).
+ */
+function wpcoupon_flush_rewrite_rules_when_needed() {
+	if ( ! get_option( 'permalink_structure' ) ) {
+		return;
+	}
+	$signature = md5( wp_json_encode( array(
+		1, // bump to force one flush after a deploy that changes rewrite rules
+		wpcoupon_get_option( 'go_out_slug', 'out' ),
+		wpcoupon_get_option( 'go_store_slug', 'go-store' ),
+		wpcoupon_get_option( 'rewrite_store_slug', '' ),
+		wpcoupon_get_option( 'rewrite_category_slug', '' ),
+		wpcoupon_get_option( 'rewrite_tag_slug', '' ),
+		(bool) wpcoupon_get_option( 'enable_single_coupon', false ),
+	) ) );
+	if ( get_option( 'wpcoupon_rewrite_signature' ) === $signature ) {
+		return;
+	}
+	update_option( 'wpcoupon_rewrite_signature', $signature ); // first, so concurrent requests do not all flush
+	// A hard flush only rewrites .htaccess where these admin functions exist; load them on a front-end request.
+	if ( ! function_exists( 'save_mod_rewrite_rules' ) ) {
+		require_once ABSPATH . 'wp-admin/includes/file.php';
+		require_once ABSPATH . 'wp-admin/includes/misc.php';
+	}
+	flush_rewrite_rules();
+}
+add_action( 'wp_loaded', 'wpcoupon_flush_rewrite_rules_when_needed', 99 );
 
 
 /**
