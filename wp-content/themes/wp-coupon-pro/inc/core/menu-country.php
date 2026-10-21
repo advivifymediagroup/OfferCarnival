@@ -8,7 +8,7 @@
  */
 
 /** Admin: the checklist inside each menu item. */
-add_action( 'wp_nav_menu_item_custom_fields', function ( $item_id ) {
+function wpcoupon_menu_country_field( $item_id ) {
 	$chosen = get_post_meta( $item_id, '_wpc_menu_countries', true );
 	$chosen = is_array( $chosen ) ? $chosen : array();
 	?>
@@ -23,7 +23,30 @@ add_action( 'wp_nav_menu_item_custom_fields', function ( $item_id ) {
 		<br><span class="description"><?php esc_html_e( 'Leave all unticked to show this item in every country.', 'wp-coupon' ); ?></span>
 	</fieldset>
 	<?php
-} );
+}
+// WordPress's own menu editor.
+add_action( 'wp_nav_menu_item_custom_fields', 'wpcoupon_menu_country_field' );
+
+// The WP Users plugin swaps in its own menu editor, which predates that hook: add the field to it directly.
+add_filter( 'wp_edit_nav_menu_walker', function ( $walker ) {
+	if ( 'ST_Walker_Nav_Menu_Edit' !== $walker ) {
+		return $walker;
+	}
+	if ( ! class_exists( 'WPC_Walker_Nav_Menu_Edit' ) ) {
+		class WPC_Walker_Nav_Menu_Edit extends ST_Walker_Nav_Menu_Edit {
+			public function start_el( &$output, $item, $depth = 0, $args = array(), $id = 0 ) {
+				$html = '';
+				parent::start_el( $html, $item, $depth, $args, $id );
+				ob_start();
+				wpcoupon_menu_country_field( $item->ID );
+				$field = ob_get_clean();
+				$pos   = strpos( $html, '<div class="menu-item-actions' );
+				$output .= false === $pos ? $html . $field : substr( $html, 0, $pos ) . $field . substr( $html, $pos );
+			}
+		}
+	}
+	return 'WPC_Walker_Nav_Menu_Edit';
+}, 30 );
 
 /** Admin: save it. */
 add_action( 'wp_update_nav_menu_item', function ( $menu_id, $item_id ) {
