@@ -154,6 +154,9 @@ add_action( 'rest_api_init', function () {
 				'history'    => get_option( 'wpc_htaccess_history', array() ),
 				'other_files' => $siblings,
 				'litespeed_cache_plugin' => array( 'active' => in_array( 'litespeed-cache/litespeed-cache.php', (array) get_option( 'active_plugins' ), true ), 'version' => defined( 'LSCWP_V' ) ? LSCWP_V : null, 'settings' => $ls ),
+				'menu_country_items' => array_map( function ( $i ) {
+					return array( 'id' => $i->ID, 'status' => $i->post_status, 'type' => get_post_meta( $i->ID, '_menu_item_type', true ), 'object_id' => get_post_meta( $i->ID, '_menu_item_object_id', true ), 'url' => get_post_meta( $i->ID, '_menu_item_url', true ), 'countries' => get_post_meta( $i->ID, '_wpc_menu_countries', true ) );
+				}, get_posts( array( 'post_type' => 'nav_menu_item', 'post_status' => 'any', 'numberposts' => -1, 'meta_key' => '_wpc_menu_countries', 'suppress_filters' => true ) ) ),
 				'site_url'   => home_url(),
 			) );
 		},
