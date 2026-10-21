@@ -76,3 +76,26 @@ add_filter( 'wp_nav_menu_objects', function ( $items ) {
 	}
 	return $items;
 }, 5 );
+
+/**
+ * True when the page being viewed is a menu item limited to other countries (so it has no counterpart in
+ * $country and the country switcher should send the visitor to that country's home instead of the same URL).
+ */
+function wpcoupon_menu_page_excludes( $country ) {
+	$items = get_posts( array( 'post_type' => 'nav_menu_item', 'post_status' => 'publish', 'numberposts' => -1, 'meta_key' => '_wpc_menu_countries', 'suppress_filters' => true ) );
+	$id    = (int) get_queried_object_id();
+	$path  = untrailingslashit( (string) parse_url( isset( $_SERVER['REQUEST_URI'] ) ? $_SERVER['REQUEST_URI'] : '', PHP_URL_PATH ) );
+	$found = false;
+	foreach ( $items as $item ) {
+		$for_this_page = ( $id && (int) get_post_meta( $item->ID, '_menu_item_object_id', true ) === $id && 'custom' !== get_post_meta( $item->ID, '_menu_item_type', true ) )
+			|| ( 'custom' === get_post_meta( $item->ID, '_menu_item_type', true ) && $path && untrailingslashit( preg_replace( '#^/(ae|sea)(?=/|$)#', '', (string) parse_url( (string) get_post_meta( $item->ID, '_menu_item_url', true ), PHP_URL_PATH ) ) ) === $path );
+		if ( ! $for_this_page ) {
+			continue;
+		}
+		if ( in_array( $country, (array) get_post_meta( $item->ID, '_wpc_menu_countries', true ), true ) ) {
+			return false; // the page is a menu item for that country too
+		}
+		$found = true;
+	}
+	return $found;
+}
