@@ -408,7 +408,8 @@ function wpcoupon_country_switcher() {
 			if ( $is_default === ( $current_slug === $default_slug ) ) {
 				continue;
 			}
-			$url        = esc_url( $wpc_site_root . ( $is_default ? '' : '/' . $term->slug ) . $wpc_current_path );
+			// A page that is a menu item for other countries only has no twin here: land on that country's home.
+			$url        = esc_url( $wpc_site_root . ( $is_default ? '' : '/' . $term->slug ) . ( wpcoupon_menu_page_excludes( $term->slug ) ? '/' : $wpc_current_path ) );
 			$flag       = wpcoupon_get_country_flag_url( $term );
 			$short      = 'ae' === $term->slug ? 'UAE' : $term->name;
 			?>
