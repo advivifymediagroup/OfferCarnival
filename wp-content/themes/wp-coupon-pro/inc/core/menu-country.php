@@ -38,7 +38,9 @@ add_filter( 'wp_edit_nav_menu_walker', function ( $walker ) {
 				$html = '';
 				parent::start_el( $html, $item, $depth, $args, $id );
 				ob_start();
-				wpcoupon_menu_country_field( $item->ID );
+				if ( false === strpos( $html, 'field-wpc-countries' ) ) { // some plugin versions already fire the standard hook
+					wpcoupon_menu_country_field( $item->ID );
+				}
 				$field = ob_get_clean();
 				$pos   = strpos( $html, '<div class="menu-item-actions' );
 				$output .= false === $pos ? $html . $field : substr( $html, 0, $pos ) . $field . substr( $html, $pos );
@@ -52,7 +54,7 @@ add_filter( 'wp_edit_nav_menu_walker', function ( $walker ) {
 add_action( 'wp_update_nav_menu_item', function ( $menu_id, $item_id ) {
 	// phpcs:ignore WordPress.Security.NonceVerification -- the menu editor verifies its own nonce before this hook fires.
 	$posted = isset( $_POST['menu-item-wpc-countries'][ $item_id ] ) ? (array) wp_unslash( $_POST['menu-item-wpc-countries'][ $item_id ] ) : array();
-	$clean  = array_values( array_intersect( array_map( 'sanitize_key', $posted ), array_keys( wpcoupon_get_country_field_options() ) ) );
+	$clean  = array_values( array_unique( array_intersect( array_map( 'sanitize_key', $posted ), array_keys( wpcoupon_get_country_field_options() ) ) ) );
 	if ( $clean ) {
 		update_post_meta( $item_id, '_wpc_menu_countries', $clean );
 	} else {
