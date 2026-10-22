@@ -536,6 +536,7 @@ require_once get_template_directory() . '/inc/core/extension-api.php';
  */
 require_once get_template_directory() . '/inc/core/rewrite-health.php';
 require_once get_template_directory() . '/inc/core/menu-country.php';
+require_once get_template_directory() . '/inc/core/country-seo.php';
 
 /**
  * Shortcodes for the Categories page.
