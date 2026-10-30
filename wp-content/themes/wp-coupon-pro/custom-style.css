@@ -346,19 +346,3 @@
 .wpc-cats__showing b {
     color: #cc581a;
 }
-
-/* Country without a flag image: a small badge with the country code instead. */
-.wpc-flag-fallback {
-	display: inline-flex;
-	align-items: center;
-	justify-content: center;
-	min-width: 22px;
-	height: 16px;
-	padding: 0 3px;
-	border-radius: 3px;
-	background: #e5e7eb;
-	color: #374151;
-	font-size: 9px;
-	font-weight: 700;
-	line-height: 1;
-}

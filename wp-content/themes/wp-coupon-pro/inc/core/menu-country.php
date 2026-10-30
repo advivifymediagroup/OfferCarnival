@@ -90,7 +90,7 @@ function wpcoupon_menu_page_excludes( $country ) {
 	$found = false;
 	foreach ( $items as $item ) {
 		$for_this_page = ( $id && (int) get_post_meta( $item->ID, '_menu_item_object_id', true ) === $id && 'custom' !== get_post_meta( $item->ID, '_menu_item_type', true ) )
-			|| ( 'custom' === get_post_meta( $item->ID, '_menu_item_type', true ) && $path && untrailingslashit( preg_replace( '#^/(' . wpcoupon_regions_regex() . ')(?=/|$)#', '', (string) parse_url( (string) get_post_meta( $item->ID, '_menu_item_url', true ), PHP_URL_PATH ) ) ) === $path );
+			|| ( 'custom' === get_post_meta( $item->ID, '_menu_item_type', true ) && $path && untrailingslashit( preg_replace( '#^/(ae|sea)(?=/|$)#', '', (string) parse_url( (string) get_post_meta( $item->ID, '_menu_item_url', true ), PHP_URL_PATH ) ) ) === $path );
 		if ( ! $for_this_page ) {
 			continue;
 		}
