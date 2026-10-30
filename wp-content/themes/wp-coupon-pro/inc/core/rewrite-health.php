@@ -154,6 +154,54 @@ add_action( 'rest_api_init', function () {
 				'history'    => get_option( 'wpc_htaccess_history', array() ),
 				'other_files' => $siblings,
 				'litespeed_cache_plugin' => array( 'active' => in_array( 'litespeed-cache/litespeed-cache.php', (array) get_option( 'active_plugins' ), true ), 'version' => defined( 'LSCWP_V' ) ? LSCWP_V : null, 'settings' => $ls ),
+				'widget_probe' => ( function () {
+					global $wp_widget_factory;
+					$out = array( 'php' => PHP_VERSION, 'display_errors' => ini_get( 'display_errors' ), 'error_reporting' => error_reporting() );
+					foreach ( array( 'st_categories_grid_view', 'popular_stores', 'st_coupons', 'st_slider' ) as $base ) {
+						$obj = null;
+						foreach ( $wp_widget_factory->widgets as $w ) {
+							if ( $w->id_base === $base ) {
+								$obj = $w;
+							}
+						}
+						if ( ! $obj ) {
+							$out[ $base ] = 'not registered';
+							continue;
+						}
+						$saved = get_option( 'widget_' . $base );
+						$cases = array( 'empty' => array() );
+						foreach ( (array) $saved as $k => $inst ) {
+							if ( is_int( $k ) && is_array( $inst ) ) {
+								$cases[ 'saved-' . $k ] = $inst;
+							}
+						}
+						foreach ( $cases as $label => $inst ) {
+							$msgs = array();
+							$lvl  = ob_get_level();
+							set_error_handler( function ( $no, $str, $file, $line ) use ( &$msgs ) {
+								$msgs[] = $str . ' @ ' . basename( $file ) . ':' . $line;
+								return true;
+							} );
+							try {
+								$obj->_set( 1 );
+								ob_start();
+								$obj->form( $inst );
+								ob_end_clean();
+								ob_start();
+								$obj->widget( array( 'before_widget' => '', 'after_widget' => '', 'before_title' => '', 'after_title' => '' ), $inst );
+								ob_end_clean();
+							} catch ( \Throwable $e ) {
+								$msgs[] = 'EXCEPTION ' . $e->getMessage() . ' @ ' . basename( $e->getFile() ) . ':' . $e->getLine();
+							}
+							while ( ob_get_level() > $lvl ) {
+								ob_end_clean();
+							}
+							restore_error_handler();
+							$out[ $base ][ $label ] = $msgs ? array_values( array_unique( $msgs ) ) : 'clean';
+						}
+					}
+					return $out;
+				} )(),
 				'site_url'   => home_url(),
 			) );
 		},
