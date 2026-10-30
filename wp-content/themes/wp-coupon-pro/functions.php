@@ -559,6 +559,7 @@ require_once get_template_directory() . '/inc/core/rewrite-health.php';
 require_once get_template_directory() . '/inc/core/menu-country.php';
 require_once get_template_directory() . '/inc/core/country-seo.php';
 require_once get_template_directory() . '/inc/core/region-links.php';
+require_once get_template_directory() . '/inc/core/cache-flush.php';
 
 /**
  * Shortcodes for the Categories page.
