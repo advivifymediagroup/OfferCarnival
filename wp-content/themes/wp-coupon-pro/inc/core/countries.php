@@ -333,15 +333,12 @@ add_filter( 'widget_text', function ( $text ) {
  * Non-default countries get their own registered "-{country}" counterpart
  * of each (e.g. 'frontpage-main-ae') so content curated with specific
  * India post/term IDs — Popular Stores, Daily Deals — never has to be
- * shared with or filtered out for another country. Falls back to the
- * original India sidebar id whenever a country has no dedicated one
- * registered, or its sidebar has no widgets assigned (nothing published
- * for it yet in wp-admin) — which is *by design* for
- * 'frontpage-after-main-ae' today (see the comment on its registration in
- * functions.php): that region's shared content is made bilingual in place
- * instead of forked, so it's meant to always fall through to the shared
- * sidebar. Either way, a new country never renders a blank homepage
- * section.
+ * shared with or filtered out for another country. A country that has its
+ * own areas registered (UAE, SEA...) uses them exactly as they are, EVEN
+ * WHEN EMPTY: an empty "(SEA)" area shows nothing, it never shows the
+ * Worldwide content instead. Only a country with no areas of its own at all
+ * falls back to the original sidebar id, so a new country never renders a
+ * blank homepage.
  *
  * @param string $base_id 'frontpage-before-main' | 'frontpage-main' | 'frontpage-after-main'
  */
@@ -355,7 +352,7 @@ function wpcoupon_get_country_sidebar_id( $base_id ) {
 
 	$country_sidebar_id = $base_id . '-' . $country;
 
-	if ( is_active_sidebar( $country_sidebar_id ) ) {
+	if ( isset( $GLOBALS['wp_registered_sidebars'][ $country_sidebar_id ] ) ) {
 		return $country_sidebar_id;
 	}
 
