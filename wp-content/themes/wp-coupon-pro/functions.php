@@ -342,6 +342,12 @@ function wpcoupon_widgets_init() {
 }
 add_action( 'widgets_init', 'wpcoupon_widgets_init' );
 
+// Appearance > Widgets: the classic screen. This theme's widgets (Popular Stores, Categories Grid, Coupons, Slider...) are
+// old-style widgets, and the block-based screen loads each of them with its own server request, all at once. On this
+// hosting some of those requests fail ("Error establishing a database connection") and the editor marks the blocks as
+// "affected by errors". The classic screen loads every widget form in one request. To go back, delete this line.
+add_filter( 'use_widgets_block_editor', '__return_false' );
+
 /**
  * Enqueue scripts and styles.
  */
