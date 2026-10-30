@@ -154,7 +154,18 @@ add_action( 'rest_api_init', function () {
 				'history'    => get_option( 'wpc_htaccess_history', array() ),
 				'other_files' => $siblings,
 				'litespeed_cache_plugin' => array( 'active' => in_array( 'litespeed-cache/litespeed-cache.php', (array) get_option( 'active_plugins' ), true ), 'version' => defined( 'LSCWP_V' ) ? LSCWP_V : null, 'settings' => $ls ),
-				'site_url'   => home_url(),
+				'sea_sidebars' => ( function () {
+					global $wpdb, $wp_registered_sidebars, $wp_registered_widgets;
+					$db   = maybe_unserialize( $wpdb->get_var( "SELECT option_value FROM {$wpdb->options} WHERE option_name = 'sidebars_widgets'" ) );
+					$seen = (array) get_option( 'sidebars_widgets' );
+					$out  = array( 'object_cache_external' => wp_using_ext_object_cache(), 'object_cache_class' => get_class( $GLOBALS['wp_object_cache'] ) );
+					foreach ( array( 'frontpage-before-main-sea', 'frontpage-main-sea', 'frontpage-after-main-sea' ) as $sid ) {
+						$ids = isset( $db[ $sid ] ) ? (array) $db[ $sid ] : array();
+						$out[ $sid ] = array( 'registered_sidebar' => isset( $wp_registered_sidebars[ $sid ] ), 'db_widgets' => $ids, 'php_sees' => isset( $seen[ $sid ] ) ? count( (array) $seen[ $sid ] ) : 0, 'is_active' => is_active_sidebar( $sid ), 'widgets_registered' => array_map( function ( $w ) use ( $wp_registered_widgets ) { return $w . ':' . ( isset( $wp_registered_widgets[ $w ] ) ? 'yes' : 'NO' ); }, $ids ) );
+					}
+					return $out;
+				} )(),
+					'site_url'   => home_url(),
 			) );
 		},
 	) );
