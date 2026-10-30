@@ -205,47 +205,12 @@ function wpcoupon_widgets_init() {
 		)
 	);
 
-	// UAE counterpart of "Footer Center", which holds the "Top Stores" list
-	// (otherwise it would show the worldwide stores on the UAE site too).
-	// Left empty it falls back to the shared one, via wpcoupon_get_country_sidebar_id().
-	register_sidebar(
-		array(
-			'name'          => esc_html__( 'Footer Center (UAE)', 'wp-coupon-pro' ),
-			'id'            => 'footer-center-ae',
-			'description'   => esc_html__( 'Footer "Top Stores" shown on the UAE site. Leave empty to show the shared Footer Center.', 'wp-coupon-pro' ),
-			'before_widget' => '<aside id="%1$s" class="widget %2$s">',
-			'after_widget'  => '</aside>',
-			'before_title'  => '<h3 class="widget-title">',
-			'after_title'   => '</h3>',
-		)
-	);
-
 	// Frontpage sidebar
 	register_sidebar(
 		array(
 			'name'          => esc_html__( 'Frontpage Before Main Content', 'wp-coupon-pro' ),
 			'id'            => 'frontpage-before-main',
 			'description'   => esc_html__( 'This sidebar display on frontpage template', 'wp-coupon-pro' ),
-			'before_widget' => '<aside id="%1$s" class="widget %2$s">',
-			'after_widget'  => '</aside>',
-			'before_title'  => '<h3 class="widget-title">',
-			'after_title'   => '</h3>',
-		)
-	);
-
-	// Country-specific counterpart of "Frontpage Before Main Content" — holds
-	// the homepage hero/banners and Popular Stores widget for a non-default
-	// country (e.g. UAE), so that content curated for India (specific store
-	// IDs, India-season banners) never has to be shared with or filtered out
-	// for another country. wpcoupon_get_frontpage_before_main_sidebar_id()
-	// picks which of the two sidebars to render, based on the visitor's
-	// current country; the original 'frontpage-before-main' id is untouched
-	// and keeps rendering exactly as before for the default country.
-	register_sidebar(
-		array(
-			'name'          => esc_html__( 'Frontpage Before Main Content (UAE)', 'wp-coupon-pro' ),
-			'id'            => 'frontpage-before-main-ae',
-			'description'   => esc_html__( 'This sidebar displays on the frontpage template when the UAE country is selected', 'wp-coupon-pro' ),
 			'before_widget' => '<aside id="%1$s" class="widget %2$s">',
 			'after_widget'  => '</aside>',
 			'before_title'  => '<h3 class="widget-title">',
@@ -265,23 +230,6 @@ function wpcoupon_widgets_init() {
 		)
 	);
 
-	// Country-specific counterpart — see the "(UAE)" sidebar above. This one
-	// holds the "Daily Deals" curated-coupon-IDs widget, which (like Popular
-	// Stores) can't just be shared: a fixed India coupon-ID list filters down
-	// to nothing once the country content filter only allows AE-tagged
-	// coupons through for a non-default country.
-	register_sidebar(
-		array(
-			'name'          => esc_html__( 'Frontpage Main Content (UAE)', 'wp-coupon-pro' ),
-			'id'            => 'frontpage-main-ae',
-			'description'   => esc_html__( 'This sidebar displays on the frontpage template when the UAE country is selected', 'wp-coupon-pro' ),
-			'before_widget' => '<aside id="%1$s" class="widget %2$s">',
-			'after_widget'  => '</aside>',
-			'before_title'  => '<h3 class="widget-title">',
-			'after_title'   => '</h3>',
-		)
-	);
-
 	register_sidebar(
 		array(
 			'name'          => esc_html__( 'Frontpage After Main Content', 'wp-coupon-pro' ),
@@ -294,48 +242,29 @@ function wpcoupon_widgets_init() {
 		)
 	);
 
-	// Country-specific counterpart — registered for symmetry with the other
-	// two frontpage regions, but deliberately left with no widgets assigned:
-	// this section's content (blog guides, featured-store spotlight, FAQ)
-	// isn't India-specific data the way coupon IDs or store lists are, so
-	// it's just shared as-is rather than forked into a second copy. Because
-	// is_active_sidebar() is false for an empty sidebar,
-	// wpcoupon_get_country_sidebar_id() automatically falls back to
-	// rendering the shared 'frontpage-after-main' sidebar for UAE too — this
-	// registration exists so that fallback is a deliberate, visible choice
-	// (and so this sidebar is one flip away from being forked for real, the
-	// day AE-specific blog posts/featured stores exist).
-	register_sidebar(
-		array(
-			'name'          => esc_html__( 'Frontpage After Main Content (UAE)', 'wp-coupon-pro' ),
-			'id'            => 'frontpage-after-main-ae',
-			'description'   => esc_html__( 'Unused today by design — see the comment above this registration in functions.php', 'wp-coupon-pro' ),
-			'before_widget' => '<aside id="%1$s" class="widget %2$s">',
-			'after_widget'  => '</aside>',
-			'before_title'  => '<h3 class="widget-title">',
-			'after_title'   => '</h3>',
-		)
-	);
-
-	// South East Asia counterparts of the three frontpage regions (same idea
-	// as the UAE ones above; the "-sea" suffix is how
-	// wpcoupon_get_country_sidebar_id() finds them).
-	foreach ( array(
-		'frontpage-before-main-sea' => 'Frontpage Before Main Content (SEA)',
-		'frontpage-main-sea'        => 'Frontpage Main Content (SEA)',
-		'frontpage-after-main-sea'  => 'Frontpage After Main Content (SEA)',
-	) as $sea_sidebar_id => $sea_sidebar_name ) {
-		register_sidebar(
-			array(
-				'name'          => $sea_sidebar_name,
-				'id'            => $sea_sidebar_id,
-				'description'   => esc_html__( 'Displays on the frontpage template when the South East Asia country is selected. Leave empty to fall back to the shared sidebar.', 'wp-coupon-pro' ),
-				'before_widget' => '<aside id="%1$s" class="widget %2$s">',
-				'after_widget'  => '</aside>',
-				'before_title'  => '<h3 class="widget-title">',
-				'after_title'   => '</h3>',
-			)
-		);
+	// Every region (country other than the default; see inc/core/regions.php) gets its own copy of Footer Center and
+	// of the three frontpage areas. Left empty, an area falls back to the shared one
+	// (wpcoupon_get_country_sidebar_id()). Adding a country adds these automatically.
+	foreach ( wpcoupon_regions() as $region_slug => $region_name ) {
+		$region_label = wpcoupon_region_short_name( $region_slug, $region_name );
+		foreach ( array(
+			'footer-center'         => esc_html__( 'Footer Center', 'wp-coupon-pro' ),
+			'frontpage-before-main' => esc_html__( 'Frontpage Before Main Content', 'wp-coupon-pro' ),
+			'frontpage-main'        => esc_html__( 'Frontpage Main Content', 'wp-coupon-pro' ),
+			'frontpage-after-main'  => esc_html__( 'Frontpage After Main Content', 'wp-coupon-pro' ),
+		) as $base_id => $base_name ) {
+			register_sidebar(
+				array(
+					'name'          => $base_name . ' (' . $region_label . ')',
+					'id'            => $base_id . '-' . $region_slug,
+					'description'   => sprintf( esc_html__( 'Shown on the %s site. Leave empty to show the shared area.', 'wp-coupon-pro' ), $region_name ),
+					'before_widget' => '<aside id="%1$s" class="widget %2$s">',
+					'after_widget'  => '</aside>',
+					'before_title'  => '<h3 class="widget-title">',
+					'after_title'   => '</h3>',
+				)
+			);
+		}
 	}
 
 }

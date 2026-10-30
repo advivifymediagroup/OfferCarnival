@@ -11,7 +11,7 @@ function wpcoupon_region_links( $html ) {
 	$home = untrailingslashit( get_option( 'home' ) );
 	return preg_replace_callback( '#href=(["\'])' . preg_quote( $home, '#' ) . '(/[^"\']*|)\1#i', function ( $m ) use ( $home ) {
 		$path = '' === $m[2] ? '/' : $m[2];
-		if ( preg_match( '#^/(?:ae|sea)(?:[/?\#]|$)|^/wp-|\.[a-z0-9]{2,4}(?:[?\#]|$)#i', $path ) ) {
+		if ( preg_match( '#^/(?:' . wpcoupon_regions_regex() . ')(?:[/?\#]|$)|^/wp-|\.[a-z0-9]{2,4}(?:[?\#]|$)#i', $path ) ) {
 			return $m[0];
 		}
 		return 'href=' . $m[1] . $home . '/' . WPC_URL_COUNTRY . $path . $m[1];
