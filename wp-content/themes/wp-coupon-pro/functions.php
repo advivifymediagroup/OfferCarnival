@@ -342,6 +342,13 @@ function wpcoupon_widgets_init() {
 }
 add_action( 'widgets_init', 'wpcoupon_widgets_init' );
 
+// Appearance > Widgets: load the old-style widgets a few at a time and retry refused requests (see the script).
+add_action( 'admin_enqueue_scripts', function ( $hook ) {
+	if ( 'widgets.php' === $hook ) {
+		wp_enqueue_script( 'wpc-widgets-throttle', get_template_directory_uri() . '/assets/js/admin-widgets-throttle.js', array( 'wp-api-fetch' ), '1.0', false );
+	}
+} );
+
 /**
  * Enqueue scripts and styles.
  */
