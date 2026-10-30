@@ -294,22 +294,14 @@ function wpcoupon_widgets_init() {
 		)
 	);
 
-	// Country-specific counterpart — registered for symmetry with the other
-	// two frontpage regions, but deliberately left with no widgets assigned:
-	// this section's content (blog guides, featured-store spotlight, FAQ)
-	// isn't India-specific data the way coupon IDs or store lists are, so
-	// it's just shared as-is rather than forked into a second copy. Because
-	// is_active_sidebar() is false for an empty sidebar,
-	// wpcoupon_get_country_sidebar_id() automatically falls back to
-	// rendering the shared 'frontpage-after-main' sidebar for UAE too — this
-	// registration exists so that fallback is a deliberate, visible choice
-	// (and so this sidebar is one flip away from being forked for real, the
-	// day AE-specific blog posts/featured stores exist).
+	// Country-specific counterpart of "Frontpage After Main Content" (blog guides, featured store, FAQ...).
+	// Like the other country areas it is used exactly as it is, even when empty: an empty one shows nothing
+	// and never falls back to the Worldwide content (see wpcoupon_get_country_sidebar_id()).
 	register_sidebar(
 		array(
 			'name'          => esc_html__( 'Frontpage After Main Content (UAE)', 'wp-coupon-pro' ),
 			'id'            => 'frontpage-after-main-ae',
-			'description'   => esc_html__( 'Unused today by design — see the comment above this registration in functions.php', 'wp-coupon-pro' ),
+			'description'   => esc_html__( 'Displays on the frontpage template when the UAE country is selected. Empty = nothing is shown.', 'wp-coupon-pro' ),
 			'before_widget' => '<aside id="%1$s" class="widget %2$s">',
 			'after_widget'  => '</aside>',
 			'before_title'  => '<h3 class="widget-title">',
