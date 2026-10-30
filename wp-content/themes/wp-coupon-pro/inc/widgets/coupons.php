@@ -38,21 +38,17 @@ class WPCoupon_Coupons_Widget extends WP_Widget {
 
          // Only query if we have valid IDs
 
-        // No ids at all = the newest coupons (the country filter limits them to the current country).
-        $latest = empty($post_ids) && empty($instance['coupon_ids']);
-        if (!empty($post_ids) || $latest) {
+        if (!empty($post_ids)) {
             $query_args = array(
                 'post_type' => 'coupon',
-                'orderby' => $latest ? 'date' : 'post__in',
-                'posts_per_page' => $latest ? 12 : count($post_ids),
+                'post__in' => $post_ids,
+                'orderby' => 'post__in',
+                'posts_per_page' => count($post_ids),
                 'post_status' => 'publish',
                 'ignore_sticky_posts' => true,
                 'no_found_rows' => true
             );
 
-            if (!$latest) {
-                $query_args['post__in'] = $post_ids;
-            }
             // Hide expired coupons if your theme supports it
             if (function_exists('wpcoupon_hide_expired_coupons_filter')) {
                 $query_args['hide_expired'] = true;
