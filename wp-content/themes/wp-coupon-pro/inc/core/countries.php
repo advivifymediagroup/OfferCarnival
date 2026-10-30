@@ -30,9 +30,10 @@
  * never wp-admin, never a hypothetical real page slug that merely starts
  * with "ae" (e.g. "/aero/").
  */
-// URL prefixes of the non-default regions (their wpc_country term slugs).
-// Hardcoded: this runs before taxonomies exist. Add a slug here to add a region.
-$wpc_region_prefixes = array( 'ae', 'sea' );
+// URL prefixes of the non-default regions (their wpc_country term slugs). The list is kept up to date by
+// regions.php whenever a country is added, edited or deleted (this runs before taxonomies exist).
+require_once __DIR__ . '/regions.php';
+$wpc_region_prefixes = array_keys( wpcoupon_regions() );
 
 $wpc_request_path = parse_url( $_SERVER['REQUEST_URI'], PHP_URL_PATH );
 $wpc_url_region   = '';
@@ -411,7 +412,10 @@ function wpcoupon_country_switcher() {
 		if ( $flag ) {
 			return '<img class="wpc-country-switcher__flag" src="' . esc_url( $flag ) . '" alt="" />';
 		}
-		return $term->slug === $default_slug ? $globe : '';
+		if ( $term->slug === $default_slug ) {
+			return $globe;
+		}
+		return '<span class="wpc-country-switcher__flag wpc-flag-fallback" aria-hidden="true">' . esc_html( strtoupper( substr( $term->slug, 0, 3 ) ) ) . '</span>';
 	};
 	$label = function ( $term, $visit ) use ( $default_slug ) {
 		if ( $term->slug === $default_slug ) {
@@ -466,8 +470,7 @@ function wpcoupon_country_switcher() {
 
 /** Short region name for buttons: "UAE", "SEA", else the term's own name. */
 function wpcoupon_region_short_label( $term ) {
-	$short = array( 'ae' => 'UAE', 'sea' => 'SEA' );
-	return isset( $short[ $term->slug ] ) ? $short[ $term->slug ] : $term->name;
+	return wpcoupon_region_short_name( $term->slug, $term->name );
 }
 
 /**
