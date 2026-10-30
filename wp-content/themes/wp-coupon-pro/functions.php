@@ -317,10 +317,11 @@ function wpcoupon_widgets_init() {
 		)
 	);
 
-	// South East Asia counterparts of the three frontpage regions (same idea
-	// as the UAE ones above; the "-sea" suffix is how
-	// wpcoupon_get_country_sidebar_id() finds them).
+	// South East Asia counterparts of the three frontpage regions and of the
+	// footer "Top Stores" (same idea as the UAE ones above; the "-sea" suffix
+	// is how wpcoupon_get_country_sidebar_id() finds them).
 	foreach ( array(
+		'footer-center-sea'         => 'Footer Center (SEA)',
 		'frontpage-before-main-sea' => 'Frontpage Before Main Content (SEA)',
 		'frontpage-main-sea'        => 'Frontpage Main Content (SEA)',
 		'frontpage-after-main-sea'  => 'Frontpage After Main Content (SEA)',
@@ -329,7 +330,7 @@ function wpcoupon_widgets_init() {
 			array(
 				'name'          => $sea_sidebar_name,
 				'id'            => $sea_sidebar_id,
-				'description'   => esc_html__( 'Displays on the frontpage template when the South East Asia country is selected. Leave empty to fall back to the shared sidebar.', 'wp-coupon-pro' ),
+				'description'   => esc_html__( 'Shown on the South East Asia site. Leave empty to fall back to the shared sidebar.', 'wp-coupon-pro' ),
 				'before_widget' => '<aside id="%1$s" class="widget %2$s">',
 				'after_widget'  => '</aside>',
 				'before_title'  => '<h3 class="widget-title">',
