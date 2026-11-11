@@ -12,13 +12,69 @@ add_action( 'rest_api_init', function () {
 		'callback'            => 'wpc_ext_get_coupons',
 		'permission_callback' => '__return_true',
 		'args'                => array(
-			'domain' => array(
+			'domain'  => array(
 				'required' => true,
 				'type'     => 'string',
 			),
+			// Country slug (e.g. "ae"); omitted = the default country, so existing callers behave as before.
+			'country' => array(
+				'type'              => 'string',
+				'sanitize_callback' => 'sanitize_key',
+			),
 		),
 	) );
+	// The list of store domains, so the extension can match the site a shopper is on without telling us what they browse.
+	register_rest_route( 'wpc/v1', '/domains', array(
+		'methods'             => 'GET',
+		'callback'            => 'wpc_ext_get_domains',
+		'permission_callback' => '__return_true',
+	) );
 } );
+
+/** apex domain => [ store term_id, ... ] from each store's website and affiliate URL. Cached for an hour. */
+function wpc_ext_domain_map() {
+	$map = get_transient( 'wpc_ext_domain_map' );
+	if ( false !== $map ) {
+		return $map;
+	}
+	global $wpdb;
+	$map  = array();
+	$rows = $wpdb->get_results( "SELECT term_id, meta_value FROM {$wpdb->termmeta} WHERE meta_key IN ( '_wpc_store_domain', '_wpc_store_url', '_wpc_store_aff_url' ) AND meta_value <> ''" );
+	foreach ( $rows as $row ) {
+		$url  = trim( $row->meta_value );
+		$host = wp_parse_url( false === strpos( $url, '//' ) ? '//' . $url : $url, PHP_URL_HOST ); // "noon.com" without a scheme too
+		if ( $host ) {
+			$map[ wpc_ext_apex_domain( $host ) ][ (int) $row->term_id ] = true;
+		}
+	}
+	foreach ( $map as $apex => $ids ) {
+		$map[ $apex ] = array_keys( $ids );
+	}
+	set_transient( 'wpc_ext_domain_map', $map, HOUR_IN_SECONDS );
+	return $map;
+}
+
+function wpc_ext_get_domains() {
+	$domains = array();
+	foreach ( wpc_ext_domain_map() as $apex => $ids ) {
+		$countries = array();
+		foreach ( $ids as $id ) {
+			$countries = array_merge( $countries, wpcoupon_get_store_countries( $id ) );
+		}
+		$domains[ $apex ] = array_values( array_unique( $countries ) );
+	}
+	$countries = array();
+	foreach ( wpcoupon_get_countries() as $term ) {
+		$countries[] = array( 'slug' => $term->slug, 'name' => $term->name );
+	}
+	$response = rest_ensure_response( array(
+		'default'   => wpcoupon_get_default_country(),
+		'countries' => $countries,
+		'domains'   => $domains,
+	) );
+	$response->header( 'Cache-Control', 'public, max-age=3600' );
+	return $response;
+}
 
 /**
  * Registrable domain for matching (e.g. "checkout.noon.com" -> "noon.com",
@@ -42,13 +98,18 @@ function wpc_ext_get_coupons( WP_REST_Request $request ) {
 		return new WP_Error( 'wpc_bad_domain', 'Invalid domain', array( 'status' => 400 ) );
 	}
 
-	$cache_key = 'wpc_ext_coupons_' . md5( $apex );
+	$country = (string) $request->get_param( 'country' );
+	if ( ! $country ) {
+		$country = wpcoupon_get_default_country();
+	}
+
+	$cache_key = 'wpc_ext_coupons_' . md5( $apex . '|' . $country );
 	$cached    = get_transient( $cache_key );
 	if ( false !== $cached ) {
 		return rest_ensure_response( $cached );
 	}
 
-	$store = wpc_ext_find_store_by_apex( $apex );
+	$store = wpc_ext_find_store_by_apex( $apex, $country );
 	if ( ! $store ) {
 		$result = array( 'store' => null, 'coupons' => array() );
 		set_transient( $cache_key, $result, 10 * MINUTE_IN_SECONDS );
@@ -76,7 +137,7 @@ function wpc_ext_get_coupons( WP_REST_Request $request ) {
 	$coupons = array();
 	foreach ( $posts as $post ) {
 		$coupon = new WPCoupon_Coupon( $post );
-		if ( $coupon->has_expired() ) {
+		if ( $coupon->has_expired() || ! in_array( $country, wpcoupon_get_coupon_countries( $post->ID ), true ) ) {
 			continue;
 		}
 		$coupons[] = array(
@@ -100,22 +161,13 @@ function wpc_ext_get_coupons( WP_REST_Request $request ) {
 	return rest_ensure_response( $result );
 }
 
-function wpc_ext_find_store_by_apex( $apex ) {
-	global $wpdb;
-	$rows = $wpdb->get_results( $wpdb->prepare(
-		"SELECT tm.term_id, tm.meta_value FROM {$wpdb->termmeta} tm
-		WHERE tm.meta_key IN ( '_wpc_store_url', '_wpc_store_aff_url' )
-		AND tm.meta_value LIKE %s",
-		'%' . $wpdb->esc_like( $apex ) . '%'
-	) );
-
-	foreach ( $rows as $row ) {
-		$host = wp_parse_url( $row->meta_value, PHP_URL_HOST );
-		if ( $host && wpc_ext_apex_domain( $host ) === $apex ) {
-			$term = get_term( $row->term_id, 'coupon_store' );
-			if ( $term && ! is_wp_error( $term ) ) {
-				return $term;
-			}
+/** The store on this domain that operates in $country (several regional stores can share one domain). */
+function wpc_ext_find_store_by_apex( $apex, $country ) {
+	$map = wpc_ext_domain_map();
+	foreach ( isset( $map[ $apex ] ) ? $map[ $apex ] : array() as $id ) {
+		$term = get_term( $id, 'coupon_store' );
+		if ( $term && ! is_wp_error( $term ) && in_array( $country, wpcoupon_get_store_countries( $id ), true ) ) {
+			return $term;
 		}
 	}
 	return null;

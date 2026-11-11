@@ -367,6 +367,16 @@ function wpcoupon_register_coupon_store_taxonomy_metabox() {
         ),
     ) );
 
+    $store_meta->add_field( array(
+        'name'          => esc_html__( 'Website domain (browser extension)', 'wp-coupon-pro' ),
+        'id'            => $prefix . 'store_domain',
+        'desc'          => esc_html__( "The store's real website, e.g. amazon.in. The browser extension uses it to know when a shopper is on this store. Needed when the Home URL above is an affiliate tracking link.", 'wp-coupon-pro' ),
+        'type'          => 'text',
+        'attributes'    => array(
+            'placeholder'   => 'example.com',
+        ),
+    ) );
+
 
     $store_meta->add_field( array(
         'name'          => esc_html__( 'Auto generate thumbnail', 'wp-coupon-pro' ),
