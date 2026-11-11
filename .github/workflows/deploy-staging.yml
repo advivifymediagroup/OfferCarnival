@@ -33,6 +33,10 @@ jobs:
             --exclude='.github' \
             --exclude='plugins/' \
             --exclude='uploads/' \
+            --exclude='litespeed/' \
+            --exclude='cache/' \
+            --exclude='object-cache.php' \
+            --exclude='advanced-cache.php' \
             --exclude='wp-config.php' \
             ./wp-content/ \
             ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}:/home/${{ secrets.SSH_USERNAME }}/domains/offercarnival.com/public_html/staging/wp-content/
